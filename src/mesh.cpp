@@ -2,7 +2,7 @@
 
 namespace glrfw {
 
-void Mesh::addTriangle(const glm::vec3& a, const glm::vec3& b,
+void mesh::add_triangle(const glm::vec3& a, const glm::vec3& b,
                        const glm::vec3& c)
 {
 	std::size_t index_a = -1;
@@ -17,19 +17,19 @@ void Mesh::addTriangle(const glm::vec3& a, const glm::vec3& b,
 		if (vertices[i] == c)
 			index_c = i;
 	}
-	index_a = updateVertex(a, index_a);
-	index_b = updateVertex(b, index_b);
-	index_c = updateVertex(c, index_c);
+	index_a = update_vertex(a, index_a);
+	index_b = update_vertex(b, index_b);
+	index_c = update_vertex(c, index_c);
 	triangles.push_back(glm::ivec3(static_cast<int>(index_a),
 	                               static_cast<int>(index_b),
 	                               static_cast<int>(index_c)));
 	std::size_t tri_index = triangles.size() - 1;
-	updateNeighbors(index_a, tri_index);
-	updateNeighbors(index_b, tri_index);
-	updateNeighbors(index_c, tri_index);
+	update_neighbors(index_a, tri_index);
+	update_neighbors(index_b, tri_index);
+	update_neighbors(index_c, tri_index);
 }
 
-void Mesh::updateNeighbors(std::size_t vert_index, std::size_t tri_index)
+void mesh::update_neighbors(std::size_t vert_index, std::size_t tri_index)
 {
 	auto iter = neighbors.find(vert_index);
 	if (iter != neighbors.end()){
@@ -39,7 +39,7 @@ void Mesh::updateNeighbors(std::size_t vert_index, std::size_t tri_index)
 	}
 }
 
-std::size_t Mesh::updateVertex(const glm::vec3& vertex, std::size_t index)
+std::size_t mesh::update_vertex(const glm::vec3& vertex, std::size_t index)
 {
 	if (index == -1) {
 		vertices.push_back(vertex);
