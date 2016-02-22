@@ -33,6 +33,27 @@ private:
 	
 };
 
+namespace detail {
+template <typename T>
+static auto test_glm_to_string(int)
+	-> decltype(glm::to_string(std::declval<T&>()), std::true_type());
+
+template <typename >
+static auto test_glm_to_string(...) -> std::false_type;
 }
 
+template <typename T>
+struct has_glm_to_string : decltype(detail::test_glm_to_string<T>(0))
+{};
+
+template <typename T,
+          typename = std::enable_if_t<has_glm_to_string<T>::value>>
+inline std::ostream& operator<<(std::ostream& out, const T& t)
+{
+	out << glm::to_string(t);
+	return out;
+}
+
+}
 #endif 
+
