@@ -13,6 +13,13 @@ public:
 	
 	void add_triangle(const glm::vec3& a, const glm::vec3& b,
 	                 const glm::vec3& c);
+
+	void print_vertices();
+
+	void print_triangles();
+
+	void print_neighbors();
+	
 private:
 
 	std::size_t update_vertex(const glm::vec3& a, std::size_t index);

@@ -1,4 +1,7 @@
 #include "mesh.hpp"
+#include <iostream>
+#include <glm/ext.hpp>
+#include <glm/glm.hpp>
 
 namespace glrfw {
 
@@ -46,6 +49,32 @@ std::size_t mesh::update_vertex(const glm::vec3& vertex, std::size_t index)
 		return vertices.size() -1;
 	} else {
 		return index;
+	}
+}
+
+void mesh::print_vertices()
+{
+	for (auto iter : vertices) {
+		std::cout << iter << std::endl;
+	}
+}
+
+void mesh::print_triangles()
+{
+	for (auto iter : triangles) {
+		std::cout << iter << std::endl;
+	}
+}
+
+void mesh::print_neighbors() 
+{
+	for (std::size_t i = 0; i < vertices.size(); ++i){
+		std::cout << "Vertex: "<<vertices[i]<<std::endl;
+		std::cout << "Tringles:" << std::endl;
+		auto faces = neighbors.find(i);
+		for (auto iter : faces->second){
+			std::cout << iter << std::endl;
+		}
 	}
 }
 
