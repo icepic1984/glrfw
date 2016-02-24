@@ -1,4 +1,5 @@
 #include "shader.hpp"
+#include "helper.hpp"
 
 namespace glrfw {
 
@@ -14,12 +15,17 @@ void delete_program(GLuint p)
     glDeleteProgram(p);
 }
 
-
 std::string read_shader(const std::string& file)
 {
+    std::string buffer;
     std::ifstream source(file);
-    return std::string((std::istreambuf_iterator<char>(source)),
-                       std::istreambuf_iterator<char>());
+    if (source.is_open()){
+        buffer = std::string((std::istreambuf_iterator<char>(source)),
+                             std::istreambuf_iterator<char>());
+    } else {
+        THROW_IF(!source.is_open());
+    }
+    return buffer;
 }
 
 std::string get_compile_log(GLuint id)
@@ -45,6 +51,10 @@ GLint compile_shader(GLuint id)
 
 } //end namespace detail
 
+shader::shader() :
+    handle(nullptr)
+{}
+
 shader::shader(shader_type type, const std::string& filename) :
     filename(filename)
 {
@@ -60,34 +70,86 @@ shader::shader(shader_type type, const std::string& filename) :
         id = glCreateShader(GL_GEOMETRY_SHADER);
         break;
     }
-    if (id == 0)
-        throw std::runtime_error("Could not create shader.");
+    THROW_IF(id == 0);
     handle.reset(id);
 
     std::string source = detail::read_shader(filename);
     const char* data = source.c_str();
     glShaderSource(handle.get(), 1, &data, NULL);
     GLint result = compile_shader(handle.get());
-    if (result == GL_FALSE) {
-        std::cerr << detail::get_compile_log(handle.get()) << std::endl;
-        throw std::runtime_error("Could not compile shader.");
-    } 
+    THROW_IF(result == GL_FALSE);
 }
 
-GLuint shader::get()
+GLuint shader::get() const
 {
     return handle.get();
 }
 
-program::program(shader vertex)
-{}
+program::program(shader vertex) :
+    linked(false),
+    vertex(std::move(vertex))
+{
+    std::cout << vertex.get() << std::endl;
+    THROW_IF(vertex.get() == 0);
+    GLuint id = glCreateProgram();
+    THROW_IF(id == 0);
+    handle.reset(id);
+    glAttachShader(handle.get(),vertex.get());
+}
 
 
-program::program(shader vertex, shader fragment)
-{}
+program::program(shader vertex, shader fragment) :
+    linked(false),
+    vertex(std::move(vertex)),
+    fragment(std::move(fragment))
+                  
+{
+    THROW_IF(vertex.get() == 0);
+    THROW_IF(fragment.get() == 0);
+    GLuint id = glCreateProgram();
+    THROW_IF(id == 0);
+    handle.reset(id);
+    glAttachShader(handle.get(), vertex.get());
+    glAttachShader(handle.get(), fragment.get());
+}
 
 
-program::program(shader vertex, shader fragment, shader geometry)
-{}
+program::program(shader vertex, shader fragment, shader geometry):
+    linked(false),
+    vertex(std::move(vertex)),
+    fragment(std::move(fragment)),
+    geometry(std::move(geometry))
+    
+{
+    THROW_IF(vertex.get() == 0);
+    THROW_IF(fragment.get() == 0);
+    THROW_IF(geometry.get() == 0);
+    GLuint id = glCreateProgram();
+    THROW_IF(id == 0);
+    handle.reset(id);
+    glAttachShader(handle.get(), vertex.get());
+    glAttachShader(handle.get(), fragment.get());
+    glAttachShader(handle.get(), geometry.get());
+}
+
+void program::attach_vertex_shader(shader vertex_shader)
+{
+    THROW_IF(linked);
+    vertex = std::move(vertex_shader);
+}
+
+void program::attach_fragment_shader(shader fragment_shader)
+{
+    THROW_IF(linked);
+    fragment = std::move(fragment_shader);
+
+}
+
+void program::attach_geometry_shader(shader geometry_shader)
+{
+    THROW_IF(linked);
+    geometry = std::move(geometry_shader);
+
+}
 
 }

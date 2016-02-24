@@ -60,7 +60,9 @@ class shader {
 public:
     shader(shader_type type, const std::string& filename);
 
-    GLuint get();
+    shader();
+
+    GLuint get() const;
 
 private:
     typedef std::unique_ptr<detail::gl_handle,
@@ -77,11 +79,21 @@ public:
     program(shader vertex, shader fragment);
 
     program(shader vertex, shader fragment, shader geometry);
+
+    void attach_vertex_shader(shader vertex);
+
+    void attach_fragment_shader(shader fragment);
+
+    void attach_geometry_shader(shader geometry);
     
 private:
     typedef std::unique_ptr<detail::gl_handle,
                             detail::gl_deleter<detail::delete_program>> program_handle_t;
     
+    bool linked;
+    shader vertex;
+    shader fragment;
+    shader geometry;
     program_handle_t handle;
 };
 
