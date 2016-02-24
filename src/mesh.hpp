@@ -10,9 +10,10 @@ namespace glrfw {
 
 class mesh {
 public:
-	
 	void add_triangle(const glm::vec3& a, const glm::vec3& b,
 	                 const glm::vec3& c);
+
+    void calculate_normals();
 
 	void print_vertices();
 
@@ -21,17 +22,22 @@ public:
 	void print_neighbors();
 	
 private:
-
 	std::size_t update_vertex(const glm::vec3& a, std::size_t index);
+
 	void update_neighbors(std::size_t vert_index, std::size_t tri_index);
 
 	std::vector<glm::vec3> vertices;
+
 	std::vector<glm::vec3> vertex_normals;
+
 	std::vector<glm::vec3> face_normals;
+
 	std::vector<glm::ivec3> triangles;
+
 	std::unordered_map<std::size_t,std::vector<std::size_t>> neighbors;
-	
 };
+
+mesh parse_stl(const std::string& file);
 
 namespace detail {
 template <typename T>
