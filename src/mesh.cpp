@@ -97,7 +97,8 @@ void mesh::print_neighbors()
 {
     for (int i = 0; i < static_cast<int>(vertices.size()); ++i) {
         std::cout << "Vertex: " << vertices[i] << std::endl;
-        std::cout << "Tringles:" << std::endl auto faces = neighbors.find(i);
+        std::cout << "Tringles:" << std::endl;
+        auto faces = neighbors.find(i);
         for (auto iter : faces->second) {
             std::cout << iter << std::endl;
         }
@@ -127,7 +128,7 @@ mesh parse_stl(const std::string& file)
         }
     }
     else {
-        THROW_IF(!stl.is_open());
+	    THROW_IF(!stl.is_open(),error_type::file_not_found);
     }
     mesh.calculate_normals();
     return mesh;

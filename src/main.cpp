@@ -49,12 +49,6 @@ int main(int argc, char* argv[])
     std::cout << glrfw::gl_version_string() << std::endl;
 
     glrfw::shader shader_test;
-    THROW_IF(shader_test.is_compiled());
-    shader_test.set_source("#version 400");
-    shader_test.compile();
-    THROW_IF(!shader_test.is_compiled());
-    THROW_IF(shader_test.get() == 0);
-
     glrfw::shader shader(glrfw::shader_type::vertex, "D:\\Meshes\\test.vert");
     glrfw::program program(std::move(shader));
     program.link();

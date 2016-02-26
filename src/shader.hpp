@@ -77,6 +77,10 @@ public:
 
     void compile();
 
+    void create();
+
+	bool is_created();
+
     bool is_compiled() const;
 
     void set_type(shader_type type);
