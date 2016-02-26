@@ -12,13 +12,13 @@
 
 BOOST_AUTO_TEST_CASE(shader)
 {
-	sf::ContextSettings settings;
-	settings.depthBits = 24;
-	settings.stencilBits = 8;
-	settings.antialiasingLevel = 4;
-	settings.majorVersion = 4;
-	settings.minorVersion = 5;
-	settings.attributeFlags = sf::ContextSettings::Core;
+    sf::ContextSettings settings;
+    settings.depthBits = 24;
+    settings.stencilBits = 8;
+    settings.antialiasingLevel = 4;
+    settings.majorVersion = 4;
+    settings.minorVersion = 5;
+    settings.attributeFlags = sf::ContextSettings::Core;
     sf::Window window(sf::VideoMode(800, 600), "OpenGL", sf::Style::Default,
                       settings);
     window.setVerticalSyncEnabled(true);
@@ -26,5 +26,4 @@ BOOST_AUTO_TEST_CASE(shader)
     glrfw::shader shader_test;
     BOOST_CHECK(!shader_test.is_compiled());
     BOOST_CHECK(shader_test.get() == 0);
-    
 }
