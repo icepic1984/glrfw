@@ -7,14 +7,23 @@
 
 namespace glrfw {
 
+mesh::mesh()
+    : vertices(std::vector<glm::vec3>()),
+      vertex_normals(std::vector<glm::vec3>()),
+      face_normals(std::vector<glm::vec3>()),
+      triangles(std::vector<glm::ivec3>()),
+      neighbors(std::unordered_map<int, std::vector<int>>())
+{
+}
+
 void mesh::add_triangle(const glm::vec3& a, const glm::vec3& b,
                        const glm::vec3& c)
 {
-	std::size_t index_a = -1;
-	std::size_t index_b = -1;
-	std::size_t index_c = -1;
+	int index_a = -1;
+	int index_b = -1;
+	int index_c = -1;
 
-	for (std::size_t i = 0; i < vertices.size(); ++i) {
+	for (int i = 0; i < static_cast<int>(vertices.size()); ++i) {
 		if (vertices[i] == a)
 			index_a = i;
 		if (vertices[i] == b)
@@ -25,13 +34,11 @@ void mesh::add_triangle(const glm::vec3& a, const glm::vec3& b,
 	index_a = update_vertex(a, index_a);
 	index_b = update_vertex(b, index_b);
 	index_c = update_vertex(c, index_c);
-    triangles.push_back(glm::ivec3(static_cast<int>(index_a),
-	                               static_cast<int>(index_b),
-	                               static_cast<int>(index_c)));
+    triangles.push_back(glm::ivec3(index_a, index_b, index_c));
     glm::vec3 normal(glm::normalize(glm::cross((b - a), (c - a))));
     face_normals.push_back(normal);
 
-	std::size_t tri_index = triangles.size() - 1;
+	int tri_index = triangles.size() - 1;
 	update_neighbors(index_a, tri_index);
 	update_neighbors(index_b, tri_index);
 	update_neighbors(index_c, tri_index);
@@ -39,7 +46,7 @@ void mesh::add_triangle(const glm::vec3& a, const glm::vec3& b,
 void mesh::calculate_normals()
 {
     vertex_normals = std::vector<glm::vec3>(vertices.size());
-    for (std::size_t i = 0; i < vertices.size(); ++i){
+    for (int i = 0; i < static_cast<int>(vertices.size()); ++i){
         auto tri_indices = neighbors[i];
         glm::vec3 temp(0,0,0);
         for (auto iter : tri_indices) {
@@ -49,17 +56,17 @@ void mesh::calculate_normals()
     }
 }
 
-void mesh::update_neighbors(std::size_t vert_index, std::size_t tri_index)
+void mesh::update_neighbors(int vert_index, int tri_index)
 {
 	auto iter = neighbors.find(vert_index);
 	if (iter != neighbors.end()){
 		iter->second.push_back(tri_index);
 	} else {
-		neighbors.insert(std::make_pair(vert_index, std::vector<std::size_t>({tri_index})));
+		neighbors.insert(std::make_pair(vert_index, std::vector<int>({tri_index})));
 	}
 }
 
-std::size_t mesh::update_vertex(const glm::vec3& vertex, std::size_t index)
+std::size_t mesh::update_vertex(const glm::vec3& vertex, int index)
 {
 	if (index == -1) {
 		vertices.push_back(vertex);

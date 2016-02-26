@@ -1,13 +1,10 @@
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include <SFML/Window.hpp>
-#include <glm/vec3.hpp> 
-#include <glm/vec4.hpp> 
-#include <glm/mat4x4.hpp> 
-#include <glm/gtc/matrix_transform.hpp> 
 #include <iostream>
+#include "helper.hpp"
 #include "mesh.hpp"
+
 #include "glutils.hpp"
 #include "shader.hpp"
 
@@ -34,6 +31,9 @@
 
 int main(int argc, char *argv[])
 {
+    (void) argc;
+    (void) argv;
+    
     glrfw::mesh mesh = glrfw::parse_stl("D:\\Meshes\\monkey.stl");
 
 	sf::ContextSettings settings;
@@ -51,11 +51,19 @@ int main(int argc, char *argv[])
     std::cout << glrfw::glsl_version() << std::endl;
     std::cout << glrfw::gl_version_string() << std::endl;
 
-    glrfw::shader shader(glrfw::shader_type::vertex,"D:\\Meshes\\test.vert");
-    glrfw::program program(std::move(shader));
+    glrfw::shader shader_test;
+    THROW_IF(shader_test.is_compiled());
+    shader_test.set_source("#version 400");
+    shader_test.compile();
+    THROW_IF(!shader_test.is_compiled());
+    THROW_IF(shader_test.get() == 0);
 
     
+    glrfw::shader shader(glrfw::shader_type::vertex,"D:\\Meshes\\test.vert");
+    glrfw::program program(std::move(shader));
+    program.link();
     
+
     bool running = true;
     while (running) {
 		sf::Event event;
