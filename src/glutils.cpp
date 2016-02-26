@@ -29,7 +29,8 @@ std::string gl_version_string()
 
 std::string glsl_version()
 {
-    return std::string(reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
+   return std::string(reinterpret_cast<const char*>(
+        glGetString(GL_SHADING_LANGUAGE_VERSION)));
 }
 
 std::string renderer()
