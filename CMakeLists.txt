@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Weffc++ -pedantic  \
     -pedantic-errors -Wextra  -Wcast-align \
     -Wcast-qual  -Wchar-subscripts  -Wcomment -Wconversion \
     -Wdisabled-optimization \
-    -Werror -Wfloat-equal  -Wformat  -Wformat=2 \
+    -Wfloat-equal  -Wformat  -Wformat=2 \
     -Wformat-nonliteral -Wformat-security  \
     -Wformat-y2k \
     -Wimport  -Winit-self  -Winline \
@@ -16,7 +16,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Weffc++ -pedantic  \
     -Wunsafe-loop-optimizations  -Wlong-long -Wmissing-braces \
     -Wmissing-field-initializers -Wmissing-format-attribute   \
     -Wmissing-include-dirs -Wmissing-noreturn \
-    -Wpacked  -Wpadded -Wparentheses  -Wpointer-arith \
+    -Wpacked  -Wparentheses  -Wpointer-arith \
     -Wredundant-decls -Wreturn-type \
     -Wsequence-point  -Wshadow -Wsign-compare  -Wstack-protector \
     -Wstrict-aliasing -Wstrict-aliasing=2 -Wswitch  -Wswitch-default \
@@ -29,12 +29,15 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Weffc++ -pedantic  \
 find_package(SFML 2 REQUIRED system window)
 find_package(GLEW REQUIRED)
 find_package(Boost COMPONENTS system filesystem unit_test_framework REQUIRED)
+find_package(OpenGL REQUIRED)
 
 include_directories(${SFML_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/extern/glm-0.9.7.2/)
 include_directories(${GLEW_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${OPENGL_INCLUDE_DIR})
 
+message(${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(src)
 add_subdirectory(test)
 

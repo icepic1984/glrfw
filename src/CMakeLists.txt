@@ -7,6 +7,6 @@ set (src
 add_library(libglrfw ${src})
 
 add_executable(glrfw main.cpp)
-target_link_libraries(glrfw libglrfw ${SFML_LIBRARIES} ${GLEW_LIBRARIES} -lopengl32 pthread)
+target_link_libraries(glrfw libglrfw ${SFML_LIBRARIES} ${GLEW_LIBRARIES} ${OPENGL_gl_LIBRARY} pthread)
 
 
