@@ -38,7 +38,7 @@ void mesh::add_triangle(const glm::vec3& a, const glm::vec3& b,
     glm::vec3 normal(glm::normalize(glm::cross((b - a), (c - a))));
     face_normals.push_back(normal);
 
-	int tri_index = triangles.size() - 1;
+    int tri_index = static_cast<int>(triangles.size()) - 1;
 	update_neighbors(index_a, tri_index);
 	update_neighbors(index_b, tri_index);
 	update_neighbors(index_c, tri_index);
@@ -66,11 +66,11 @@ void mesh::update_neighbors(int vert_index, int tri_index)
 	}
 }
 
-std::size_t mesh::update_vertex(const glm::vec3& vertex, int index)
+int mesh::update_vertex(const glm::vec3& vertex, int index)
 {
 	if (index == -1) {
 		vertices.push_back(vertex);
-		return vertices.size() -1;
+		return static_cast<int>(vertices.size()) -1;
 	} else {
 		return index;
 	}
@@ -92,7 +92,7 @@ void mesh::print_triangles()
 
 void mesh::print_neighbors() 
 {
-	for (std::size_t i = 0; i < vertices.size(); ++i){
+	for (int i = 0; i < static_cast<int>(vertices.size()); ++i){
 		std::cout << "Vertex: "<<vertices[i]<<std::endl;
 		std::cout << "Tringles:" << std::endl;
 		auto faces = neighbors.find(i);
