@@ -41,6 +41,17 @@ bool is_already_created(const glrfw::gl_error& ex)
     return ex.type == glrfw::error_type::already_created;
 }
 
+BOOST_AUTO_TEST_CASE(gl_handle)
+{
+	glrfw::detail::gl_handle handle1;
+	BOOST_CHECK(handle1.x_ == 0);
+	glrfw::detail::gl_handle handle2(10);
+	BOOST_CHECK(handle1 != handle2);
+	handle1 = glrfw::detail::gl_handle(10);
+    BOOST_CHECK(handle1 == handle2);
+}
+
+
 BOOST_AUTO_TEST_CASE(default_construction)
 {
     // init window
@@ -60,8 +71,6 @@ BOOST_AUTO_TEST_CASE(default_construction)
     glrfw::shader shader_test;
     BOOST_CHECK(!shader_test.is_compiled());
     BOOST_CHECK(shader_test.get() == 0);
-    BOOST_CHECK_EXCEPTION(shader_test.set_type(glrfw::shader_type::vertex),
-                          glrfw::gl_error, not_created);
     BOOST_CHECK_EXCEPTION(shader_test.compile(), glrfw::gl_error, not_created);
     shader_test.create();
     BOOST_CHECK_EXCEPTION(shader_test.compile(), glrfw::gl_error,
