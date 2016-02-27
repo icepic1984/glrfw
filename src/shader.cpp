@@ -126,7 +126,6 @@ shader_type shader::type() const
 
 void shader::set_type(shader_type type)
 {
-	THROW_IF(get() == 0, error_type::not_created);
     THROW_IF(compiled_, error_type::already_compiled);
     type_ = type;
 }
