@@ -9,6 +9,8 @@
 #include <streambuf>
 #include <unordered_map>
 #include "handle.hpp"
+#include "error.hpp"
+
 
 namespace glrfw {
 
@@ -90,6 +92,10 @@ public:
 
     void set_frag_data_location(GLuint index, const std::string& name);
 
+	void bind();
+	
+	void unbind();
+	
     void link();
 
     bool is_linked() const;
@@ -97,6 +103,22 @@ public:
 	GLuint get() const;
 
 	std::string attributes();
+
+	std::string uniforms();
+
+	void set_uniform(const std::string& name, const glm::mat4& matrix);
+
+	void set_uniform(const std::string& name, const glm::mat3& matrix);
+
+	void set_uniform(const std::string& name, const glm::vec3& vec);
+
+	void set_uniform(const std::string& name, const glm::vec4& vec);
+
+	void set_uniform(const std::string& name, int value);
+	
+	void set_uniform(const std::string& name, float value);
+
+	void set_uniform(const std::string& name, bool value);
 
 private:
     typedef std::unique_ptr<detail::gl_handle,
@@ -110,9 +132,13 @@ private:
 
 	void insert(shader sh, int index);
 
+	GLuint uniform_location(const std::string& name);
+
     bool linked_;
 
 	std::unordered_map<int,shader> shaders_;
+
+	std::unordered_map<std::string, GLint> uniform_loc_;
 	
     program_handle_t handle_;
 };

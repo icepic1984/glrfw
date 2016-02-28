@@ -1,5 +1,4 @@
 #include "shader.hpp"
-#include "error.hpp"
 #include <sstream>
 
 namespace glrfw {
@@ -165,6 +164,7 @@ void shader::compile()
 program::program():
 	linked_(false),
 	shaders_(std::unordered_map<int,shader>()),
+	uniform_loc_(std::unordered_map<std::string, GLint>()),
     handle_(nullptr)
 {
     GLuint id = glCreateProgram();
@@ -175,6 +175,7 @@ program::program():
 program::program(shader&& vertex) :
     linked_(false),
     shaders_(std::unordered_map<int,shader>()),
+    uniform_loc_(std::unordered_map<std::string, GLint>()),
     handle_(nullptr)
     
 {
@@ -190,6 +191,7 @@ program::program(shader&& vertex) :
 program::program(shader&& vertex, shader&& fragment) :
     linked_(false),
     shaders_(std::unordered_map<int,shader>()),
+    uniform_loc_(std::unordered_map<std::string, GLint>()),
     handle_(nullptr)
                   
 {
@@ -208,6 +210,7 @@ program::program(shader&& vertex, shader&& fragment) :
 program::program(shader&& vertex, shader&& fragment, shader&& geometry):
     linked_(false),
     shaders_(std::unordered_map<int,shader>()),
+    uniform_loc_(std::unordered_map<std::string, GLint>()),
     handle_(nullptr)
     
 {
@@ -246,6 +249,19 @@ void program::attach_geometry_shader(shader&& geometry_shader)
     insert(std::move(geometry_shader),shader_index::geometry);
 }
 
+GLuint program::uniform_location(const std::string& name)
+{
+	auto iter = uniform_loc_.find(name);
+	if (iter != uniform_loc_.end()){
+		return iter->second;
+    } else {
+		GLint loc = glGetUniformLocation(handle_.get(),name.c_str());
+		THROW_IF(loc < 0, error_type::uniform_not_found);
+		uniform_loc_.insert(std::make_pair(name,loc));
+		return loc;
+	}
+}
+
 void program::insert(shader sh, int index)
 {
 	auto iter = shaders_.find(index);
@@ -253,6 +269,18 @@ void program::insert(shader sh, int index)
 		iter->second = std::move(sh);
     else
 	    shaders_.insert(std::make_pair(index,std::move(sh)));
+}
+
+void program::bind()
+{
+	THROW_IF(!is_linked(),error_type::program_not_linked);
+	glUseProgram(handle_.get());
+}
+
+void program::unbind()
+{
+	THROW_IF(!is_linked(),error_type::program_not_linked);
+	glUseProgram(handle_.get());
 }
 
 bool program::is_linked() const
@@ -266,7 +294,6 @@ void program::link()
      if (result == GL_FALSE)
 	     std::cerr << get_link_log(handle_.get()) <<std::endl;
      THROW_IF(result == GL_FALSE, error_type::program_not_linked);
-     glUseProgram(handle_.get());
      linked_ = true;
 }
 
@@ -286,15 +313,38 @@ GLuint program::get() const
 {
     return handle_.get();
 }
+
+std::string program::uniforms()
+{
+	THROW_IF(!is_linked(), error_type::program_not_linked);
+    GLint max_length;
+	GLint n;
+	glGetProgramiv(handle_.get(),GL_ACTIVE_UNIFORMS,&n);
+	glGetProgramiv(handle_.get(), GL_ACTIVE_UNIFORM_MAX_LENGTH, &max_length);
+	GLint written, size, location;
+	GLenum type;
+	std::string buffer(max_length,' ');
+	std::ostringstream ss; 
+	ss << " Index | Name\n";
+	ss << "---------------------------------------------\n";
+	for (int i = 0; i < n; ++i){
+        glGetActiveUniform(handle_.get(), i, max_length, &written, &size, &type,
+                          &buffer[0]);
+        location = glGetUniformLocation(handle_.get(),buffer.c_str());
+        ss << location << " | " << buffer.c_str() << std::endl;
+    }
+	return ss.str();
+
+}
+
 std::string program::attributes()
 {
-
     THROW_IF(!is_linked(), error_type::program_not_linked);
     GLint max_length;
 	GLint n;
 	glGetProgramiv(handle_.get(),GL_ACTIVE_ATTRIBUTES,&n);
 	glGetProgramiv(handle_.get(), GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &max_length);
-	GLint written, size, location = 0;
+	GLint written, size, location;
 	GLenum type;
 	std::string buffer(max_length,' ');
 	std::ostringstream ss; 
@@ -303,10 +353,58 @@ std::string program::attributes()
 	for (int i = 0; i < n; ++i){
         glGetActiveAttrib(handle_.get(), i, max_length, &written, &size, &type,
                           &buffer[0]);
-        ss << location << " | " << buffer << std::endl;
+        location = glGetAttribLocation(handle_.get(),buffer.c_str());
+        ss << location << " | " << buffer.c_str() << std::endl;
     }
 	return ss.str();
 }
 
+void program::set_uniform(const std::string& name, const glm::mat4& matrix)
+{
+	GLint loc = uniform_location(name);
+	glUniformMatrix4fv(loc,1,GL_FALSE,&matrix[0][0]);
+}
+
+	
+void program::set_uniform(const std::string& name, const glm::mat3& matrix)
+{
+	GLint loc = uniform_location(name);
+	glUniformMatrix3fv(loc,1,GL_FALSE,&matrix[0][0]);
+}
+
+
+void program::set_uniform(const std::string& name, const glm::vec3& vec)
+{
+	GLint loc = uniform_location(name);
+	glUniform3fv(loc,1,&vec[0]);
 
 }
+
+void program::set_uniform(const std::string& name, const glm::vec4& vec)
+{
+	GLint loc = uniform_location(name);
+	glUniform4fv(loc,1,&vec[0]);
+}
+
+void program::set_uniform(const std::string& name, int value)
+{
+	GLint loc = uniform_location(name);
+	glUniform1i(loc,value);
+}
+
+	
+void program::set_uniform(const std::string& name, float value)
+{
+    GLint loc = uniform_location(name);
+    glUniform1f(loc, value);
+}
+
+
+void program::set_uniform(const std::string& name, bool value)
+{
+	GLint loc = uniform_location(name);
+    glUniform1i(loc, value ? 1 : 0);
+}
+
+
+} //end of glrfw namespace

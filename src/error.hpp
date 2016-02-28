@@ -23,7 +23,8 @@ enum class error_type {
     program_not_linked,
     program_not_created,
     no_shader_source,
-    file_not_found
+    file_not_found,
+    uniform_not_found
 };
 
 const char* errors_to_str(error_type type);

@@ -15,7 +15,8 @@ const std::unordered_map<error_type, const char*> error_map =
 	(program_not_linked,"program_not_linked")
 	(program_not_created,"program_not_created")
 	(no_shader_source,"no_shader_source")
-	(file_not_found,"file_not_found");
+	(file_not_found,"file_not_found")
+	(uniform_not_found,"uniform_not_found");
 
 } // end of anonymous namespace
 
