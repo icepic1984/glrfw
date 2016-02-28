@@ -15,7 +15,6 @@
 namespace glrfw {
 
 enum class error_type {
-    shader_already_created,
     shader_already_compiled,
     shader_not_compiled,
     shader_not_created,

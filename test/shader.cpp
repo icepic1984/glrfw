@@ -36,21 +36,10 @@ bool shader_not_created(const glrfw::gl_error& ex)
     return ex.type == glrfw::error_type::shader_not_created;
 }
 
-bool shader_is_already_created(const glrfw::gl_error& ex)
+bool program_already_linked(const glrfw::gl_error& ex)
 {
-    return ex.type == glrfw::error_type::shader_already_created;
+    return ex.type == glrfw::error_type::program_already_linked;
 }
-
-BOOST_AUTO_TEST_CASE(gl_handle)
-{
-	glrfw::detail::gl_handle handle1;
-	BOOST_CHECK(handle1.x_ == 0);
-	glrfw::detail::gl_handle handle2(10);
-	BOOST_CHECK(handle1 != handle2);
-	handle1 = glrfw::detail::gl_handle(10);
-    BOOST_CHECK(handle1 == handle2);
-}
-
 
 BOOST_AUTO_TEST_CASE(shader_default_construction)
 {
@@ -68,24 +57,16 @@ BOOST_AUTO_TEST_CASE(shader_default_construction)
     glrfw::init_gl();
 
     // test default constructor
-    glrfw::shader shader_test;
+    glrfw::shader shader_test(glrfw::shader_type::vertex);
     BOOST_CHECK(!shader_test.is_compiled());
-    BOOST_CHECK(shader_test.get() == 0);
-    BOOST_CHECK_EXCEPTION(shader_test.compile(), glrfw::gl_error,
-                          shader_not_created);
-    shader_test.create();
     BOOST_CHECK_EXCEPTION(shader_test.compile(), glrfw::gl_error,
                           no_shader_source);
-    BOOST_CHECK_EXCEPTION(shader_test.create(), glrfw::gl_error,
-                          shader_is_already_created);
     // test shader with errors
     shader_test.set_source("void main");
     BOOST_CHECK_EXCEPTION(shader_test.compile(), glrfw::gl_error,
                           shader_not_compiled);
     shader_test.set_source("void main() { }");
     shader_test.compile();
-    BOOST_CHECK_EXCEPTION(shader_test.set_type(glrfw::shader_type::vertex),
-                          glrfw::gl_error, shader_is_compiled);
     BOOST_CHECK_EXCEPTION(shader_test.compile();
                           , glrfw::gl_error, shader_is_compiled);
 }
@@ -113,19 +94,51 @@ BOOST_AUTO_TEST_CASE(shader_construction)
 
     glrfw::shader shader_test(glrfw::shader_type::vertex,
                               "../test/resources/test_ok.vert");
-    BOOST_CHECK(shader_test.is_created());
     BOOST_CHECK(shader_test.is_compiled());
 }
 
 
 BOOST_AUTO_TEST_CASE(program_construction)
 {
-	glrfw::program prog;
-	BOOST_CHECK(prog.get() == 0);
+	sf::ContextSettings settings;
+	settings.depthBits = 24;
+    settings.stencilBits = 8;
+    settings.antialiasingLevel = 4;
+    settings.majorVersion = 3;
+    settings.minorVersion = 3;
+    settings.attributeFlags = sf::ContextSettings::Core;
+    sf::Window window(sf::VideoMode(800, 600), "OpenGL", sf::Style::Default,
+                      settings);
+    window.setVerticalSyncEnabled(true);
+    glrfw::init_gl();
+    glrfw::program prog;
+    BOOST_CHECK(prog.get() != 0);
 	BOOST_CHECK(!prog.is_linked());
-	
-	
+	glrfw::shader vertex_shader_1(glrfw::shader_type::vertex,
+	                            "../test/resources/test_ok.vert");
+	glrfw::shader vertex_shader_2(glrfw::shader_type::fragment);
+	BOOST_CHECK(vertex_shader_1.is_compiled());
+	BOOST_CHECK(!vertex_shader_2.is_compiled());
+	prog.attach_vertex_shader(std::move(vertex_shader_1));
+	BOOST_CHECK_EXCEPTION(prog.attach_vertex_shader(std::move(vertex_shader_2)),
+	                      glrfw::gl_error,shader_not_compiled);
+	vertex_shader_2.set_source("void main() {}");
+	vertex_shader_2.compile();
+	BOOST_CHECK(vertex_shader_2.is_compiled());
+	prog.link();
+	BOOST_CHECK(prog.is_linked());
+	BOOST_CHECK_EXCEPTION(prog.attach_vertex_shader(std::move(vertex_shader_2)),
+	                      glrfw::gl_error,program_already_linked);
 
+    // BOOST_CHECK_EXCEPTION(
+    //     glrfw::program(glrfw::shader(glrfw::shader_type::vertex,
+    //                                  "../test/resources/test_fail.vert")),
+    //     glrfw::gl_error, shader_not_compiled);
+    // BOOST_CHECK_EXCEPTION(
+	//     glrfw::program(glrfw::shader(glrfw::shader_type::vertex,
+    //                                  "../test/resources/test_not_found")),
+    //     glrfw::gl_error, no_file);
+    
 }
 
 

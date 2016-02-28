@@ -48,7 +48,6 @@ int main(int argc, char* argv[])
     std::cout << glrfw::glsl_version() << std::endl;
     std::cout << glrfw::gl_version_string() << std::endl;
 
-    glrfw::shader shader_test;
     glrfw::shader shader(glrfw::shader_type::vertex, "D:\\Meshes\\test.vert");
     glrfw::program program(std::move(shader));
     program.link();

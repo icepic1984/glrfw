@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <streambuf>
+#include <unordered_map>
 #include "handle.hpp"
 
 namespace glrfw {
@@ -34,9 +35,9 @@ GLint create_shader(shader_type type);
 
 class shader {
 public:
+	shader(shader_type type);
+	
     shader(shader_type type, const std::string& filename);
-
-    shader();
 
     shader_type type() const;
 
@@ -44,11 +45,7 @@ public:
 
     void create();
 
-	bool is_created() const;
-
     bool is_compiled() const;
-
-    void set_type(shader_type type);
 
     std::string source();
 
@@ -77,17 +74,17 @@ class program {
 public:
 	program();
 	
-    program(shader vertex);
+    program(shader&& vertex);
 
-    program(shader vertex, shader fragment);
+    program(shader&& vertex, shader&& fragment);
 
-    program(shader vertex, shader fragment, shader geometry);
+    program(shader&& vertex, shader&& fragment, shader&& geometry);
 
-    void attach_vertex_shader(shader vertex);
+    void attach_vertex_shader(shader&& vertex);
 
-    void attach_fragment_shader(shader fragment);
+    void attach_fragment_shader(shader&& fragment);
 
-    void attach_geometry_shader(shader geometry);
+    void attach_geometry_shader(shader&& geometry);
 
     void set_attribute(GLuint index, const std::string& name);
 
@@ -104,14 +101,17 @@ private:
                             detail::gl_deleter<detail::delete_program>>
         program_handle_t;
 
+    struct shader_index {
+
+        enum shader_index_e { vertex, fragment, geometry };
+	};
+
+	void insert(shader sh, int index);
+
     bool linked_;
 
-    shader vertex_;
-
-    shader fragment_;
-
-    shader geometry_;
-
+	std::unordered_map<int,shader> shaders_;
+	
     program_handle_t handle_;
 };
 
