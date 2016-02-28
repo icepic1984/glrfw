@@ -43,3 +43,4 @@ add_subdirectory(test)
 
 enable_testing()
 add_test (NAME test_shader COMMAND shader)
+add_test (NAME test_handle COMMAND handle)

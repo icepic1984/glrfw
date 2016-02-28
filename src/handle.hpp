@@ -1,5 +1,8 @@
 #ifndef HANDLE_HPP
 #define HANDLE_HPP
+#include <GL/glew.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
 
 namespace  glrfw {
 
@@ -33,6 +36,7 @@ struct gl_handle {
 };
 
 template <void (*func)(GLuint)> struct gl_deleter {
+
     typedef gl_handle pointer;
 
     void operator()(gl_handle p)
