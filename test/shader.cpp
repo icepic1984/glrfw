@@ -22,7 +22,6 @@ bool no_shader_source(const glrfw::gl_error& ex)
 
 bool shader_not_compiled(const glrfw::gl_error& ex)
 {
-    std::cout << static_cast<int>(ex.type) << std::endl;
     return ex.type == glrfw::error_type::shader_not_compiled;
 }
 
@@ -129,16 +128,34 @@ BOOST_AUTO_TEST_CASE(program_construction)
 	BOOST_CHECK(prog.is_linked());
 	BOOST_CHECK_EXCEPTION(prog.attach_vertex_shader(std::move(vertex_shader_2)),
 	                      glrfw::gl_error,program_already_linked);
-
-    // BOOST_CHECK_EXCEPTION(
-    //     glrfw::program(glrfw::shader(glrfw::shader_type::vertex,
-    //                                  "../test/resources/test_fail.vert")),
-    //     glrfw::gl_error, shader_not_compiled);
-    // BOOST_CHECK_EXCEPTION(
-	//     glrfw::program(glrfw::shader(glrfw::shader_type::vertex,
-    //                                  "../test/resources/test_not_found")),
-    //     glrfw::gl_error, no_file);
-    
 }
+
+
+BOOST_AUTO_TEST_CASE(program_attrib)
+{
+	sf::ContextSettings settings;
+	settings.depthBits = 24;
+    settings.stencilBits = 8;
+    settings.antialiasingLevel = 4;
+    settings.majorVersion = 3;
+    settings.minorVersion = 3;
+    settings.attributeFlags = sf::ContextSettings::Core;
+    sf::Window window(sf::VideoMode(800, 600), "OpenGL", sf::Style::Default,
+                      settings);
+    window.setVerticalSyncEnabled(true);
+    glrfw::init_gl();
+
+    glrfw::shader vertex(glrfw::shader_type::vertex, "../resources/basic.vert");
+    glrfw::shader fragment(glrfw::shader_type::fragment,
+                           "../resources/basic.frag");
+    glrfw::program prog(std::move(vertex),std::move(fragment));
+    prog.set_attribute(0,"VertexPosition");
+    prog.set_attribute(0,"VertexColor");
+    prog.link();
+    BOOST_CHECK(prog.is_linked());
+    std::cout << prog.attributes() << std::endl;
+
+}
+
 
 

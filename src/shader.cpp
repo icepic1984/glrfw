@@ -1,5 +1,6 @@
 #include "shader.hpp"
 #include "error.hpp"
+#include <sstream>
 
 namespace glrfw {
 
@@ -265,16 +266,19 @@ void program::link()
      if (result == GL_FALSE)
 	     std::cerr << get_link_log(handle_.get()) <<std::endl;
      THROW_IF(result == GL_FALSE, error_type::program_not_linked);
+     glUseProgram(handle_.get());
      linked_ = true;
 }
 
 void program::set_attribute(GLuint index, const std::string& name)
 {
+	THROW_IF(is_linked(),error_type::program_already_linked);
     glBindAttribLocation(handle_.get(), index, name.c_str());
 }
 
 void program::set_frag_data_location(GLuint index, const std::string& name)
 {
+	THROW_IF(is_linked(),error_type::program_already_linked);
     glBindFragDataLocation(handle_.get(), index, name.c_str());
 }
 
@@ -282,5 +286,27 @@ GLuint program::get() const
 {
     return handle_.get();
 }
+std::string program::attributes()
+{
+
+    THROW_IF(!is_linked(), error_type::program_not_linked);
+    GLint max_length;
+	GLint n;
+	glGetProgramiv(handle_.get(),GL_ACTIVE_ATTRIBUTES,&n);
+	glGetProgramiv(handle_.get(), GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &max_length);
+	GLint written, size, location = 0;
+	GLenum type;
+	std::string buffer(max_length,' ');
+	std::ostringstream ss; 
+	ss << " Index | Name\n";
+	ss << "---------------------------------------------\n";
+	for (int i = 0; i < n; ++i){
+        glGetActiveAttrib(handle_.get(), i, max_length, &written, &size, &type,
+                          &buffer[0]);
+        ss << location << " | " << buffer << std::endl;
+    }
+	return ss.str();
+}
+
 
 }

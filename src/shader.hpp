@@ -96,6 +96,8 @@ public:
 
 	GLuint get() const;
 
+	std::string attributes();
+
 private:
     typedef std::unique_ptr<detail::gl_handle,
                             detail::gl_deleter<detail::delete_program>>
