@@ -150,11 +150,14 @@ BOOST_AUTO_TEST_CASE(program_attrib)
                            "../resources/basic.frag");
     glrfw::program prog(std::move(vertex),std::move(fragment));
     prog.set_attribute(0,"VertexPosition");
-    prog.set_attribute(0,"VertexColor");
+    prog.set_attribute(1,"VertexColor");
     prog.link();
     BOOST_CHECK(prog.is_linked());
     std::cout << prog.attributes() << std::endl;
-
+    prog.bind();
+    prog.set_uniform("model_view",glm::mat4());
+    prog.set_uniform("projection",glm::mat4());
+    std::cout << prog.uniforms() << std::endl;
 }
 
 
