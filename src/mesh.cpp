@@ -3,7 +3,6 @@
 #include <fstream>
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
-#include "helper.hpp"
 
 namespace glrfw {
 

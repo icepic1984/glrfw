@@ -1,5 +1,5 @@
 #include "shader.hpp"
-#include "helper.hpp"
+#include "error.hpp"
 
 namespace glrfw {
 
@@ -107,7 +107,7 @@ shader::shader(shader_type type, const std::string& filename) :
     handle_(nullptr)
 {
     GLuint id = detail::create_shader(type_);
-    THROW_IF(id == 0, error_type::not_created);
+    THROW_IF(id == 0, error_type::shader_not_created);
     handle_.reset(id);
     source_ = detail::read_shader(filename_);
     const char* data = source_.c_str();
@@ -115,7 +115,7 @@ shader::shader(shader_type type, const std::string& filename) :
     GLint result = compile_shader(handle_.get());
     if (result == GL_FALSE)
         std::cerr << get_compile_log(handle_.get()) <<std::endl;
-    THROW_IF(result == GL_FALSE, error_type::not_compiled);
+    THROW_IF(result == GL_FALSE, error_type::shader_not_compiled);
     compiled_ = true;
 }
 
@@ -126,7 +126,7 @@ shader_type shader::type() const
 
 void shader::set_type(shader_type type)
 {
-    THROW_IF(compiled_, error_type::already_compiled);
+    THROW_IF(compiled_, error_type::shader_already_compiled);
     type_ = type;
 }
 
@@ -140,7 +140,7 @@ std::string shader::source()
     return source_;
 }
 
-bool shader::is_created()
+bool shader::is_created() const
 {
     return get() != 0;
 }
@@ -157,25 +157,33 @@ void shader::set_source(const std::string& source)
 
 void shader::create()
 {
-    THROW_IF(get() != 0, error_type::already_created);
+    THROW_IF(get() != 0, error_type::shader_already_created);
     GLuint id = detail::create_shader(type_);
-    THROW_IF(id == 0,error_type::not_created);
+    THROW_IF(id == 0,error_type::shader_not_created);
     handle_.reset(id);
 }
 	
 void shader::compile()
 {
-	THROW_IF(get() == 0, error_type::not_created);
-    THROW_IF(compiled_, error_type::already_compiled);
-    THROW_IF(source_.empty(), error_type::no_source);
+	THROW_IF(get() == 0, error_type::shader_not_created);
+    THROW_IF(compiled_, error_type::shader_already_compiled);
+    THROW_IF(source_.empty(), error_type::no_shader_source);
     const char* data = source_.c_str();
     glShaderSource(handle_.get(), 1, &data, NULL);
     GLint result = compile_shader(handle_.get());
     if (result == GL_FALSE)
         std::cerr << get_compile_log(handle_.get()) <<std::endl;
-    THROW_IF(result == GL_FALSE,error_type::not_compiled);
+    THROW_IF(result == GL_FALSE,error_type::shader_not_compiled);
     compiled_ = true;
 }
+
+program::program() :
+	linked_(false),
+	vertex_(shader()),
+	fragment_(shader()),
+	geometry_(shader()),
+	handle_(nullptr)
+{}
 
 program::program(shader vertex) :
     linked_(false),
@@ -185,9 +193,10 @@ program::program(shader vertex) :
     handle_(nullptr)
     
 {
-	THROW_IF(vertex_.get() == 0,error_type::not_created);
+	THROW_IF(vertex_.get() == 0,error_type::shader_not_created);
+	THROW_IF(!vertex_.is_compiled(),error_type::shader_not_compiled);
     GLuint id = glCreateProgram();
-    THROW_IF(id == 0,error_type::not_created);
+    THROW_IF(id == 0,error_type::program_not_created);
     handle_.reset(id);
     glAttachShader(handle_.get(), vertex_.get());
 }
@@ -201,10 +210,12 @@ program::program(shader vertex, shader fragment) :
     handle_(nullptr)
                   
 {
-    THROW_IF(vertex_.get() == 0, error_type::not_created);
-    THROW_IF(fragment_.get() == 0, error_type::not_created);
+    THROW_IF(vertex_.get() == 0, error_type::shader_not_created);
+    THROW_IF(fragment_.get() == 0, error_type::shader_not_created);
+	THROW_IF(!vertex_.is_compiled(),error_type::shader_not_compiled);
+	THROW_IF(!fragment_.is_compiled(),error_type::shader_not_compiled);
     GLuint id = glCreateProgram();
-    THROW_IF(id == 0, error_type::not_created);
+    THROW_IF(id == 0, error_type::program_not_created);
     handle_.reset(id);
     glAttachShader(handle_.get(), vertex_.get());
     glAttachShader(handle_.get(), fragment_.get());
@@ -219,11 +230,14 @@ program::program(shader vertex, shader fragment, shader geometry):
     handle_(nullptr)
     
 {
-    THROW_IF(vertex_.get() == 0, error_type::not_created);
-    THROW_IF(fragment_.get() == 0, error_type::not_created);
-    THROW_IF(geometry_.get() == 0, error_type::not_created);
+	THROW_IF(vertex_.get() == 0, error_type::shader_not_created);
+    THROW_IF(fragment_.get() == 0, error_type::shader_not_created);
+    THROW_IF(geometry_.get() == 0, error_type::shader_not_created);
+	THROW_IF(!vertex_.is_compiled(),error_type::shader_not_compiled);
+	THROW_IF(!fragment_.is_compiled(),error_type::shader_not_compiled);
+	THROW_IF(!geometry_.is_compiled(),error_type::shader_not_compiled);
     GLuint id = glCreateProgram();
-    THROW_IF(id == 0, error_type::not_created);
+    THROW_IF(id == 0, error_type::program_not_created);
     handle_.reset(id);
     glAttachShader(handle_.get(), vertex.get());
     glAttachShader(handle_.get(), fragment.get());
@@ -232,19 +246,19 @@ program::program(shader vertex, shader fragment, shader geometry):
 
 void program::attach_vertex_shader(shader vertex_shader)
 {
-    THROW_IF(linked_, error_type::already_linked);
+    THROW_IF(linked_, error_type::program_already_linked);
     vertex_ = std::move(vertex_shader);
 }
 
 void program::attach_fragment_shader(shader fragment_shader)
 {
-    THROW_IF(linked_, error_type::already_linked);
+    THROW_IF(linked_, error_type::program_already_linked);
     fragment_ = std::move(fragment_shader);
 }
 
 void program::attach_geometry_shader(shader geometry_shader)
 {
-    THROW_IF(linked_, error_type::already_linked);
+    THROW_IF(linked_, error_type::program_already_linked);
     geometry_ = std::move(geometry_shader);
 }
 
@@ -255,12 +269,15 @@ bool program::is_linked() const
 
 void program::link()
 {
-    THROW_IF((vertex_.get() == 0) && (fragment_.get() == 0) &&
-             (geometry_.get() == 0),error_type::not_created);
+    THROW_IF(vertex_.get() == 0 && fragment_.get() == 0 && geometry_.get() == 0,
+             error_type::shader_not_created);
+    THROW_IF(!vertex_.is_compiled() && !fragment_.is_compiled() &&
+                 !geometry_.is_compiled(),
+             error_type::shader_not_compiled);
     GLint result = link_program(handle_.get());
     if (result == GL_FALSE)
         std::cerr << get_link_log(handle_.get()) <<std::endl;
-    THROW_IF(result == GL_FALSE, error_type::not_linked);
+    THROW_IF(result == GL_FALSE, error_type::program_not_linked);
     linked_ = true;
 }
 
@@ -274,6 +291,9 @@ void program::set_frag_data_location(GLuint index, const std::string& name)
     glBindFragDataLocation(handle_.get(), index, name.c_str());
 }
 
-
+GLuint program::get() const
+{
+    return handle_.get();
+}
 
 }

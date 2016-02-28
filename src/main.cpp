@@ -2,7 +2,7 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <iostream>
-#include "helper.hpp"
+#include "error.hpp"
 #include "mesh.hpp"
 
 #include "glutils.hpp"

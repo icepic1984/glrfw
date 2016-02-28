@@ -7,49 +7,13 @@
 #include <iostream>
 #include <fstream>
 #include <streambuf>
+#include "handle.hpp"
 
 namespace glrfw {
 
 enum class shader_type { vertex, fragment, geometry };
 
 namespace detail {
-
-struct gl_handle {
-
-    GLuint x_;
-
-    gl_handle(std::nullptr_t = nullptr) : x_(0)
-    {
-    }
-
-    gl_handle(GLuint x) : x_(x)
-    {
-    }
-
-    operator GLuint() const
-    {
-        return x_;
-    }
-
-    friend bool operator==(gl_handle x, gl_handle y)
-    {
-        return x.x_ == y.x_;
-    }
-    friend bool operator!=(gl_handle x, gl_handle y)
-    {
-        return x.x_ != y.x_;
-    }
-};
-
-template <void (*func)(GLuint)> struct gl_deleter {
-    typedef gl_handle pointer;
-
-    void operator()(gl_handle p)
-    {
-        std::cout << "Destory: " << p.x_ << std::endl;
-        func(p.x_);
-    }
-};
 
 void delete_shader(GLuint p);
 
@@ -67,6 +31,7 @@ GLint create_shader(shader_type type);
 
 } // end namespace detail
 
+
 class shader {
 public:
     shader(shader_type type, const std::string& filename);
@@ -79,7 +44,7 @@ public:
 
     void create();
 
-	bool is_created();
+	bool is_created() const;
 
     bool is_compiled() const;
 
@@ -110,6 +75,8 @@ private:
 class program {
 
 public:
+	program();
+	
     program(shader vertex);
 
     program(shader vertex, shader fragment);
@@ -130,6 +97,8 @@ public:
 
     bool is_linked() const;
 
+	GLuint get() const;
+
 private:
     typedef std::unique_ptr<detail::gl_handle,
                             detail::gl_deleter<detail::delete_program>>
@@ -145,6 +114,7 @@ private:
 
     program_handle_t handle_;
 };
-}
+
+} // end namespace glrfw
 
 #endif

@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <unordered_map>
-#include "helper.hpp"
+#include "error.hpp"
 
 namespace glrfw {
 
