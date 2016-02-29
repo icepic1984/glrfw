@@ -99,8 +99,8 @@ BOOST_AUTO_TEST_CASE(shader_construction)
 
 BOOST_AUTO_TEST_CASE(program_construction)
 {
-	sf::ContextSettings settings;
-	settings.depthBits = 24;
+    sf::ContextSettings settings;
+    settings.depthBits = 24;
     settings.stencilBits = 8;
     settings.antialiasingLevel = 4;
     settings.majorVersion = 3;
@@ -112,29 +112,28 @@ BOOST_AUTO_TEST_CASE(program_construction)
     glrfw::init_gl();
     glrfw::program prog;
     BOOST_CHECK(prog.get() != 0);
-	BOOST_CHECK(!prog.is_linked());
-	glrfw::shader vertex_shader_1(glrfw::shader_type::vertex,
-	                            "../test/resources/test_ok.vert");
-	glrfw::shader vertex_shader_2(glrfw::shader_type::fragment);
-	BOOST_CHECK(vertex_shader_1.is_compiled());
-	BOOST_CHECK(!vertex_shader_2.is_compiled());
-	prog.attach_vertex_shader(std::move(vertex_shader_1));
-	BOOST_CHECK_EXCEPTION(prog.attach_vertex_shader(std::move(vertex_shader_2)),
-	                      glrfw::gl_error,shader_not_compiled);
-	vertex_shader_2.set_source("void main() {}");
-	vertex_shader_2.compile();
-	BOOST_CHECK(vertex_shader_2.is_compiled());
-	prog.link();
-	BOOST_CHECK(prog.is_linked());
-	BOOST_CHECK_EXCEPTION(prog.attach_vertex_shader(std::move(vertex_shader_2)),
-	                      glrfw::gl_error,program_already_linked);
+    BOOST_CHECK(!prog.is_linked());
+    glrfw::shader vertex_shader_1(glrfw::shader_type::vertex,
+                                  "../test/resources/test_ok.vert");
+    glrfw::shader vertex_shader_2(glrfw::shader_type::fragment);
+    BOOST_CHECK(vertex_shader_1.is_compiled());
+    BOOST_CHECK(!vertex_shader_2.is_compiled());
+    prog.attach_vertex_shader(std::move(vertex_shader_1));
+    BOOST_CHECK_EXCEPTION(prog.attach_vertex_shader(std::move(vertex_shader_2)),
+                          glrfw::gl_error, shader_not_compiled);
+    vertex_shader_2.set_source("void main() {}");
+    vertex_shader_2.compile();
+    BOOST_CHECK(vertex_shader_2.is_compiled());
+    prog.link();
+    BOOST_CHECK(prog.is_linked());
+    BOOST_CHECK_EXCEPTION(prog.attach_vertex_shader(std::move(vertex_shader_2)),
+                          glrfw::gl_error, program_already_linked);
 }
-
 
 BOOST_AUTO_TEST_CASE(program_attrib)
 {
-	sf::ContextSettings settings;
-	settings.depthBits = 24;
+    sf::ContextSettings settings;
+    settings.depthBits = 24;
     settings.stencilBits = 8;
     settings.antialiasingLevel = 4;
     settings.majorVersion = 3;
@@ -159,6 +158,3 @@ BOOST_AUTO_TEST_CASE(program_attrib)
     prog.set_uniform("projection",glm::mat4());
     std::cout << prog.uniforms() << std::endl;
 }
-
-
-

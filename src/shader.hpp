@@ -11,7 +11,6 @@
 #include "handle.hpp"
 #include "error.hpp"
 
-
 namespace glrfw {
 
 enum class shader_type { vertex, fragment, geometry };
@@ -37,8 +36,8 @@ GLint create_shader(shader_type type);
 
 class shader {
 public:
-	shader(shader_type type);
-	
+    shader(shader_type type);
+
     shader(shader_type type, const std::string& filename);
 
     shader_type type() const;
@@ -74,8 +73,8 @@ private:
 class program {
 
 public:
-	program();
-	
+    program();
+
     program(shader&& vertex);
 
     program(shader&& vertex, shader&& fragment);
@@ -92,33 +91,33 @@ public:
 
     void set_frag_data_location(GLuint index, const std::string& name);
 
-	void bind();
-	
-	void unbind();
-	
+    void bind();
+
+    void unbind();
+
     void link();
 
     bool is_linked() const;
 
-	GLuint get() const;
+    GLuint get() const;
 
-	std::string attributes();
+    std::string attributes();
 
-	std::string uniforms();
+    std::string uniforms();
 
-	void set_uniform(const std::string& name, const glm::mat4& matrix);
+    void set_uniform(const std::string& name, const glm::mat4& matrix);
 
-	void set_uniform(const std::string& name, const glm::mat3& matrix);
+    void set_uniform(const std::string& name, const glm::mat3& matrix);
 
-	void set_uniform(const std::string& name, const glm::vec3& vec);
+    void set_uniform(const std::string& name, const glm::vec3& vec);
 
-	void set_uniform(const std::string& name, const glm::vec4& vec);
+    void set_uniform(const std::string& name, const glm::vec4& vec);
 
-	void set_uniform(const std::string& name, int value);
-	
-	void set_uniform(const std::string& name, float value);
+    void set_uniform(const std::string& name, int value);
 
-	void set_uniform(const std::string& name, bool value);
+    void set_uniform(const std::string& name, float value);
+
+    void set_uniform(const std::string& name, bool value);
 
 private:
     typedef std::unique_ptr<detail::gl_handle,
@@ -128,18 +127,18 @@ private:
     struct shader_index {
 
         enum shader_index_e { vertex, fragment, geometry };
-	};
+    };
 
-	void insert(shader sh, int index);
+    void insert(shader sh, int index);
 
-	GLuint uniform_location(const std::string& name);
+    GLuint uniform_location(const std::string& name);
 
     bool linked_;
 
-	std::unordered_map<int,shader> shaders_;
+    std::unordered_map<int, shader> shaders_;
 
-	std::unordered_map<std::string, GLint> uniform_loc_;
-	
+    std::unordered_map<std::string, GLint> uniform_loc_;
+
     program_handle_t handle_;
 };
 
