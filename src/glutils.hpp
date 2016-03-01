@@ -17,6 +17,12 @@ std::string glsl_version();
 std::string renderer();
 
 std::string vendor();
+
+std::string get_error();
+
+void GLAPIENTRY debug_callback(GLenum source, GLenum type, GLuint id,
+                               GLenum severity, GLsizei length,
+                               const GLchar* message, const void* userParam);
 }
 
 #endif
