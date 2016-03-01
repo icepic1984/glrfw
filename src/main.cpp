@@ -33,11 +33,10 @@ int main(int argc, char* argv[])
     (void)argc;
     (void)argv;
 
+
+    // Setup windows and create context
     int width = 800;
     int height = 600;
-    
-    glrfw::mesh mesh = glrfw::parse_stl("D:\\Meshes\\monkey.stl");
-
     sf::ContextSettings settings;
     settings.depthBits = 24;
     settings.stencilBits = 8;
@@ -49,28 +48,49 @@ int main(int argc, char* argv[])
                       settings);
     window.setVerticalSyncEnabled(true);
 
+    // set basic opengl configs
+    glViewport(0,0,width,height);
+	glEnable(GL_DEPTH_TEST);
+	glEnable (GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glClearColor(0.0f,0.0f,0.0f,1.0f);
+
+
+    // init glew to wrangle gl pointers
     glrfw::init_gl();
+
     // enable debugging
     glDebugMessageCallback(&glrfw::debug_callback,nullptr);
+    // print context version
     std::cout << glrfw::glsl_version() << std::endl;
     std::cout << glrfw::gl_version_string() << std::endl;
 
+    // load mesh
+    glrfw::mesh mesh = glrfw::parse_stl("D:\\Meshes\\monkey.stl");
+    std::cout << mesh.vertices.size() << std::endl;
+
+    // load vertex and fragment shader
     glrfw::shader vertex(glrfw::shader_type::vertex,
                          "D:\\Projects\\glrfw\\resources\\pixel.vert");
 
     glrfw::shader fragment(glrfw::shader_type::fragment,
                            "D:\\Projects\\glrfw\\resources\\pixel.frag");
 
+    // create program
     glrfw::program program(std::move(vertex),std::move(fragment));
+
+    // create matrices
     auto projection = glm::perspective(45.0f, static_cast<float>(width) /
                                                   static_cast<float>(height),
                                        0.1f, 1000.0f);
     auto model =
         glm::lookAt(glm::vec3(0.0f, 0.0f, 100), glm::vec3(0.0f, 0.0f, 0.0f),
                     glm::vec3(0.0f, 1.0f, 0.0f));
+    
+    std::cout << glm::to_string(model) << std::endl;
     auto normal = glm::transpose(glm::inverse(glm::mat3(model)));
 
-
+    // link program and update uniforms
     program.link();
     program.bind();
     program.set_uniform("projectionMatrix", projection);
@@ -78,49 +98,30 @@ int main(int argc, char* argv[])
     program.set_uniform("normalMatrix", normal);
     std::cout << program.attributes() << std::endl;
     std::cout << program.uniforms() << std::endl;
-    // glViewport(0,0,width,height);
-	// glEnable(GL_DEPTH_TEST);
-	// glEnable(GL_TEXTURE_2D);
-	// glEnable (GL_BLEND);
-	// glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	// glClearColor(0.0f,0.0f,0.0f,1.0f);
-
-    // auto projection = glm::perspective(45.0f, static_cast<float>(width) /
-    //                                               static_cast<float>(height),
-    //                                   0.1f, 1000.0f);
-
-    // auto model =
-    //     glm::lookAt(glm::vec3(0.0f, 0.0f, 100), glm::vec3(0.0f, 0.0f, 0.0f),
-    //                 glm::vec3(0.0f, 1.0f, 0.0f));
-    // auto normal  = glm::transpose(glm::inverse(glm::mat3(model)));
-    // program.bind();
-    // program.set_uniform("projectionMatrix", projection);
-    // program.set_uniform("modelviewMatrix", model);
-    // program.set_uniform("normalMatrix", normal);
-    // std::cout << program.uniforms() << std::endl;
-
-    // GLuint vao;
-    // glGenVertexArrays(1, &vao);
-    // GLuint vbos[3];
-    // glBindVertexArray(vao);
-    // glGenBuffers(3,&vbos[0]);
-    // glEnableVertexAttribArray(0);
-    // glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
-    // glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(glm::vec3),
-    //              &mesh.vertices[0],GL_STATIC_DRAW);
-    // glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,0);
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos[1]);
-    // glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-    //              mesh.triangles.size() * sizeof(glm::ivec3), &mesh.triangles[0],
-    //              GL_STATIC_DRAW);
-    // glEnableVertexAttribArray(1);
-    // glBindBuffer(GL_ARRAY_BUFFER, vbos[2]);
-    // glBufferData(GL_ARRAY_BUFFER,
-    //              mesh.vertex_normals.size() * sizeof(glm::vec3),
-    //              &mesh.vertex_normals[0], GL_STATIC_DRAW);
-    // glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,0); 
+    program.unbind();
     
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    GLuint vbos[3];
+    glBindVertexArray(vao);
+    glGenBuffers(3,&vbos[0]);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
+    glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(glm::vec3),
+                 &mesh.vertices[0],GL_STATIC_DRAW);
+    glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos[1]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                 mesh.triangles.size() * sizeof(glm::ivec3), &mesh.triangles[0],
+                 GL_STATIC_DRAW);
+    glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, vbos[2]);
+    glBufferData(GL_ARRAY_BUFFER,
+                 mesh.vertex_normals.size() * sizeof(glm::vec3),
+                 &mesh.vertex_normals[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,0,0); 
 
+   
     bool running = true;
     while (running) {
         sf::Event event;
@@ -132,6 +133,13 @@ int main(int argc, char* argv[])
                 glViewport(0, 0, event.size.width, event.size.height);
             }
         }
+        
+        glBindVertexArray(vao);
+        program.bind();
+        glDrawElements(GL_TRIANGLES, mesh.triangles.size() / 3, GL_UNSIGNED_INT,
+                       nullptr);
+        program.unbind();
+        glBindVertexArray(0);
         
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
