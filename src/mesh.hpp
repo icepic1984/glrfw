@@ -22,7 +22,6 @@ public:
 
     void print_neighbors();
 
-private:
     int update_vertex(const glm::vec3& a, int index);
 
     void update_neighbors(int vert_index, int tri_index);
