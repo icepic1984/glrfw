@@ -70,6 +70,7 @@ int main(int argc, char* argv[])
                     glm::vec3(0.0f, 1.0f, 0.0f));
     auto normal = glm::transpose(glm::inverse(glm::mat3(model)));
 
+
     program.link();
     program.bind();
     program.set_uniform("projectionMatrix", projection);
