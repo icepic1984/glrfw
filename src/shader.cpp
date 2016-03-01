@@ -1,5 +1,6 @@
 #include "shader.hpp"
 #include <sstream>
+#include "glutils.hpp"
 
 namespace glrfw {
 
@@ -77,7 +78,7 @@ GLint link_program(GLuint id)
 {
     glLinkProgram(id);
     GLint result;
-    glGetShaderiv(id, GL_LINK_STATUS, &result);
+    glGetProgramiv(id, GL_LINK_STATUS, &result);
     return result;
 }
 
@@ -179,6 +180,8 @@ program::program(shader&& vertex) :
     handle_(nullptr)
 {
     THROW_IF(!vertex.is_compiled(),error_type::shader_not_compiled);
+    THROW_IF(vertex.type() != shader_type::vertex,
+             error_type::invalid_shader_type);
     GLuint id = glCreateProgram();
     THROW_IF(id == 0,error_type::program_not_created);
     handle_.reset(id);
@@ -195,6 +198,10 @@ program::program(shader&& vertex, shader&& fragment) :
 {
     THROW_IF(!vertex.is_compiled(), error_type::shader_not_compiled);
     THROW_IF(!fragment.is_compiled(), error_type::shader_not_compiled);
+    THROW_IF(vertex.type() != shader_type::vertex,
+             error_type::invalid_shader_type);
+    THROW_IF(fragment.type() != shader_type::fragment,
+             error_type::invalid_shader_type);
     GLuint id = glCreateProgram();
     THROW_IF(id == 0, error_type::program_not_created);
     handle_.reset(id);
@@ -214,6 +221,12 @@ program::program(shader&& vertex, shader&& fragment, shader&& geometry):
     THROW_IF(!vertex.is_compiled(), error_type::shader_not_compiled);
     THROW_IF(!fragment.is_compiled(), error_type::shader_not_compiled);
     THROW_IF(!geometry.is_compiled(), error_type::shader_not_compiled);
+    THROW_IF(vertex.type() != shader_type::vertex,
+             error_type::invalid_shader_type);
+    THROW_IF(fragment.type() != shader_type::fragment,
+             error_type::invalid_shader_type);
+    THROW_IF(geometry.type() != shader_type::geometry,
+             error_type::invalid_shader_type);
     GLuint id = glCreateProgram();
     THROW_IF(id == 0, error_type::program_not_created);
     handle_.reset(id);
@@ -255,6 +268,7 @@ GLuint program::uniform_location(const std::string& name)
         GLint loc = glGetUniformLocation(handle_.get(), name.c_str());
         THROW_IF(loc < 0, error_type::uniform_not_found);
         uniform_loc_.insert(std::make_pair(name, loc));
+        
         return loc;
     }
 }
@@ -277,7 +291,7 @@ void program::bind()
 void program::unbind()
 {
     THROW_IF(!is_linked(), error_type::program_not_linked);
-    glUseProgram(handle_.get());
+    glUseProgram(0);
 }
 
 bool program::is_linked() const
