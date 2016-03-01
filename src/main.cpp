@@ -26,14 +26,22 @@
 // 	return 0;
 // }
 
+std::vector<glm::vec3> vertices{{0, 0, 0}, {1, 0, 0}, {1, 1, 0}};
 
+std::vector<glm::vec3> normals{{0, 0, 1}, {0, 0, 1}, {0, 0, 1}};
 
+std::vector<glm::vec3> colors {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
+
+std::vector<glm::ivec3> indices {{0,1,2}};
+
+        
 int main(int argc, char* argv[])
 {
     (void)argc;
     (void)argv;
 
 
+    std::cout << "size: "<<sizeof(glm::vec3) << std::endl;
     // Setup windows and create context
     int width = 800;
     int height = 600;
@@ -53,7 +61,7 @@ int main(int argc, char* argv[])
 	glEnable(GL_DEPTH_TEST);
 	glEnable (GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glClearColor(0.0f,0.0f,0.0f,1.0f);
+	glClearColor(1.0f,1.0f,1.0f,1.0f);
 
 
     // init glew to wrangle gl pointers
@@ -71,10 +79,10 @@ int main(int argc, char* argv[])
 
     // load vertex and fragment shader
     glrfw::shader vertex(glrfw::shader_type::vertex,
-                         "D:\\Projects\\glrfw\\resources\\pixel.vert");
+                         "D:\\Projects\\glrfw\\resources\\basic.vert");
 
     glrfw::shader fragment(glrfw::shader_type::fragment,
-                           "D:\\Projects\\glrfw\\resources\\pixel.frag");
+                           "D:\\Projects\\glrfw\\resources\\basic.frag");
 
     // create program
     glrfw::program program(std::move(vertex),std::move(fragment));
@@ -84,42 +92,62 @@ int main(int argc, char* argv[])
                                                   static_cast<float>(height),
                                        0.1f, 1000.0f);
     auto model =
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 100), glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 10), glm::vec3(0.0f, 0.0f, 0.0f),
                     glm::vec3(0.0f, 1.0f, 0.0f));
     
     std::cout << glm::to_string(model) << std::endl;
     auto normal = glm::transpose(glm::inverse(glm::mat3(model)));
 
     // link program and update uniforms
+    glBindAttribLocation(program.get(),0,"VertexPosition");
+    glBindAttribLocation(program.get(),1,"VertexColor");
     program.link();
     program.bind();
-    program.set_uniform("projectionMatrix", projection);
-    program.set_uniform("modelviewMatrix", model);
-    program.set_uniform("normalMatrix", normal);
+    // program.set_uniform("projectionMatrix", projection);
+    // program.set_uniform("modelviewMatrix", model);
+    // program.set_uniform("normalMatrix", normal);
     std::cout << program.attributes() << std::endl;
     std::cout << program.uniforms() << std::endl;
-    program.unbind();
     
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    GLuint vbos[3];
-    glBindVertexArray(vao);
-    glGenBuffers(3,&vbos[0]);
-    glEnableVertexAttribArray(0);
+    GLuint vbos[2];
+    glGenBuffers(2,&vbos[0]);
     glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
-    glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(glm::vec3),
-                 &mesh.vertices[0],GL_STATIC_DRAW);
-    glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos[1]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                 mesh.triangles.size() * sizeof(glm::ivec3), &mesh.triangles[0],
-                 GL_STATIC_DRAW);
-    glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, vbos[2]);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3),
+                 &vertices[0],GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, vbos[1]);
     glBufferData(GL_ARRAY_BUFFER,
-                 mesh.vertex_normals.size() * sizeof(glm::vec3),
-                 &mesh.vertex_normals[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,0,0); 
+                 colors.size() * sizeof(glm::vec3),
+                 &colors[0], GL_STATIC_DRAW);
+    GLuint vao;
+    glGenVertexArrays(1,&vao);
+    glBindVertexArray(vao);
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,0);
+    glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,0,0);
+
+
+
+    // GLuint vao;
+    // glGenVertexArrays(1, &vao);
+    // GLuint vbos[3];
+    // glBindVertexArray(vao);
+    // glGenBuffers(3,&vbos[0]);
+    // glEnableVertexAttribArray(0);
+    // glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
+    // glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(glm::vec3),
+    //              &mesh.vertices[0],GL_STATIC_DRAW);
+    // glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,0);
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos[1]);
+    // glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+    //              mesh.triangles.size() * sizeof(glm::ivec3), &mesh.triangles[0],
+    //              GL_STATIC_DRAW);
+    // glEnableVertexAttribArray(1);
+    // glBindBuffer(GL_ARRAY_BUFFER, vbos[2]);
+    // glBufferData(GL_ARRAY_BUFFER,
+    //              mesh.vertex_normals.size() * sizeof(glm::vec3),
+    //              &mesh.vertex_normals[0], GL_STATIC_DRAW);
+    // glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,0,0); 
 
    
     bool running = true;
@@ -134,15 +162,12 @@ int main(int argc, char* argv[])
             }
         }
         
-        glBindVertexArray(vao);
-        program.bind();
-        glDrawElements(GL_TRIANGLES, mesh.triangles.size() / 3, GL_UNSIGNED_INT,
-                       nullptr);
-        program.unbind();
-        glBindVertexArray(0);
-        
-
+        //glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT,
+        //              nullptr);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glBindVertexArray(vao);
+        glDrawArrays(GL_TRIANGLES,0,vertices.size());
+
         window.display();
     }
     return 0;
