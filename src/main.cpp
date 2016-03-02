@@ -75,7 +75,6 @@ int main(int argc, char* argv[])
 
     // create program
     glrfw::program program(std::move(vertex),std::move(fragment));
-
     // create matrices
     auto projection = glm::perspective(45.0f, static_cast<float>(width) /
                                                   static_cast<float>(height),
@@ -83,8 +82,6 @@ int main(int argc, char* argv[])
     auto model =
         glm::lookAt(glm::vec3(0.0f, 0.0f, delta), glm::vec3(0.0f, 0.0f, 0.0f),
                     glm::vec3(0.0f, 1.0f, 0.0f));
-    
-    std::cout << glm::to_string(model) << std::endl;
     auto normal = glm::transpose(glm::inverse(glm::mat3(model)));
 
     program.set_attribute(0, "in_Position");
@@ -130,13 +127,24 @@ int main(int argc, char* argv[])
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,vbos[1]);
     
     bool running = true;
+    bool mouse_pressed = false;
+
+    glm::vec2 start_pos;
+    glm::vec2 cur_pos;
+    
     while (running) {
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
                 running = false;
             } else if (event.type == sf::Event::Resized) {
-                glViewport(0, 0, event.size.width, event.size.height);
+                width = event.size.width;
+                height = event.size.height;
+                glViewport(0, 0, width, height);
+                projection =
+                    glm::perspective(45.0f, static_cast<float>(width) /
+                                                static_cast<float>(height),
+                                     0.1f, 1000.0f);
             } else if (event.type == sf::Event::MouseWheelMoved) {
                 delta += event.mouseWheel.delta;
                 glm::mat3 eye = glm::inverse(glm::mat3(model));
@@ -144,10 +152,41 @@ int main(int argc, char* argv[])
                 model = glm::translate(model,tran);
                 normal = glm::transpose(glm::inverse(glm::mat3(model)));
                 delta = 0;
+            } else if (event.type == sf::Event::MouseButtonPressed) {
+                if (event.mouseButton.button == sf::Mouse::Left) {
+                    mouse_pressed = true;
+                    start_pos.x = static_cast<float>(event.mouseButton.x);
+                    start_pos.y = static_cast<float>(event.mouseButton.y);
+                    cur_pos.x = static_cast<float>(event.mouseButton.x);
+                    cur_pos.y = static_cast<float>(event.mouseButton.y);
+                }
+            } else if (event.type == sf::Event::MouseButtonReleased) {
+                mouse_pressed = false;
+            } else if (event.type == sf::Event::MouseMoved) {
+                if (mouse_pressed) {
+                    cur_pos.x = static_cast<float>(event.mouseMove.x);
+                    cur_pos.y = static_cast<float>(event.mouseMove.y);
+                }
             }
-                
         }
-        
+
+        if (mouse_pressed) {
+            if( cur_pos != start_pos) {
+                glm::vec3 va = getArcBall(start_pos, width, height);
+                glm::vec3 vb = getArcBall(cur_pos, width, height);
+                float angle = acos(std::min(1.0f, glm::dot(va, vb)));
+                glm::vec3 axis = glm::cross(va, vb);
+                glm::mat3 eye = glm::inverse(glm::mat3(model));
+                glm::vec3 obj_axis = eye * axis;
+                model = glm::rotate(model, 0.1f * glm::degrees(angle), obj_axis);
+                normal = glm::transpose(glm::inverse(glm::mat3(model)));
+                start_pos = cur_pos;
+            }
+        }
+
+        std::cout << "Mouse: " << mouse_pressed << std::endl;
+        std::cout << glm::to_string(start_pos) << std::endl;
+        std::cout << glm::to_string(cur_pos) << std::endl;
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glBindVertexArray(vao);
         program.bind();
