@@ -45,14 +45,6 @@ int main(int argc, char* argv[])
                       settings);
     window.setVerticalSyncEnabled(true);
 
-    // set basic opengl configs
-    glViewport(0,0,width,height);
-	glEnable(GL_DEPTH_TEST);
-	glEnable (GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glClearColor(1.0f,1.0f,1.0f,1.0f);
-
-
     // init glew to wrangle gl pointers
     glrfw::init_gl();
 
@@ -74,6 +66,14 @@ int main(int argc, char* argv[])
     glrfw::shader fragment(glrfw::shader_type::fragment,
                            glrfw::resource_path + std::string("pixel.frag"));
 
+    glrfw::shader vertex_point(glrfw::shader_type::vertex,
+                               glrfw::resource_path + std::string("point.vert"));
+    glrfw::shader fragment_point(glrfw::shader_type::fragment,
+                                 glrfw::resource_path +
+                                     std::string("point.frag"));
+    glrfw::program program_point(std::move(vertex_point),
+                                 std::move(fragment_point));
+
     // create program
     glrfw::program program(std::move(vertex),std::move(fragment));
     // create matrices
@@ -87,7 +87,6 @@ int main(int argc, char* argv[])
 
     program.set_attribute(0, "in_Position");
     program.set_attribute(1, "in_Normals");
-
     program.link();
     program.bind();
     program.set_uniform("projectionMatrix", projection);
@@ -95,16 +94,24 @@ int main(int argc, char* argv[])
     program.set_uniform("normalMatrix", normal);
     std::cout << program.attributes() << std::endl;
     std::cout << program.uniforms() << std::endl;
+
+    program_point.set_attribute(0, "in_Position");
+    program_point.link();
+    program_point.bind();
+    program_point.set_uniform("projectionMatrix", projection);
+    program_point.set_uniform("modelviewMatrix", model);
+    std::cout << program_point.attributes() << std::endl;
+    std::cout << program_point.uniforms() << std::endl;
     
     glViewport(0,0,width,height);
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_TEXTURE_2D);
     glEnable (GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glClearColor(0.0f,0.0f,0.0f,1.0f);
+    glPointSize(10.0f);
 
-    GLuint vbos[3];
-    glGenBuffers(3,&vbos[0]);
+    GLuint vbos[4];
+    glGenBuffers(4,&vbos[0]);
     glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
     glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(glm::vec3),
                  &mesh.vertices[0], GL_STATIC_DRAW);
@@ -115,10 +122,12 @@ int main(int argc, char* argv[])
     glBindBuffer(GL_ARRAY_BUFFER, vbos[2]);
     glBufferData(GL_ARRAY_BUFFER, mesh.vertex_normals.size() * sizeof(glm::vec3),
                  &mesh.vertex_normals[0], GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER,vbos[3]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3), nullptr, GL_DYNAMIC_DRAW);
 
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    GLuint vao[2];
+    glGenVertexArrays(2, &vao[0]);
+    glBindVertexArray(vao[0]);
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glBindBuffer(GL_ARRAY_BUFFER,vbos[0]);
@@ -126,6 +135,11 @@ int main(int argc, char* argv[])
     glBindBuffer(GL_ARRAY_BUFFER,vbos[2]);
     glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,0,0); 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,vbos[1]);
+    
+    glBindVertexArray(vao[1]);
+    glBindBuffer(GL_ARRAY_BUFFER, vbos[3]);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,0); 
     
     bool running = true;
     bool mouse_pressed = false;
@@ -135,7 +149,10 @@ int main(int argc, char* argv[])
     glm::vec3 light_pos(0,0,100);
     float angle = 0.0f;
     bool move_light = false;
-    
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbos[3]);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3), &light_pos);
+
     while (running) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -197,21 +214,27 @@ int main(int argc, char* argv[])
                 angle = 0.0;
             light_pos.x = 100.0f * cos(glm::radians(angle));
             light_pos.y = 100.0f * sin(glm::radians(angle));
+
+            glBindVertexArray(vao[1]);
+            glBindBuffer(GL_ARRAY_BUFFER,vbos[3]);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3),&light_pos);
+
         }
         
-        std::cout << glm::to_string(light_pos) << std::endl;
-                
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glBindVertexArray(vao);
+        glBindVertexArray(vao[0]);
         program.bind();
         program.set_uniform("projectionMatrix", projection);
         program.set_uniform("modelviewMatrix", model);
         program.set_uniform("normalMatrix", normal);
         program.set_uniform("lightpos",light_pos);
-
-
         glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3, GL_UNSIGNED_INT,
                        nullptr);
+        glBindVertexArray(vao[1]);
+        program_point.bind();
+        program_point.set_uniform("projectionMatrix", projection);
+        program_point.set_uniform("modelviewMatrix", model);
+        glDrawArrays(GL_POINTS,0,1);
         window.display();
     }
     return 0;
