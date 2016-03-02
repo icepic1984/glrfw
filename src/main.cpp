@@ -8,16 +8,30 @@
 #include "glutils.hpp"
 #include "shader.hpp"
 
+glm::vec3 getArcBall(const glm::vec2 pos, int width, int height)
+{
+    glm::vec3 p =
+        glm::vec3((2.0f * pos.x) / static_cast<float>(width) - 1.0f,
+                  (2.0f * pos.y) / static_cast<float>(height) - 1.0f, 0);
+    p.y = -p.y;
+    float op = p.x * p.x + p.y * p.y;
+    if (op <= 1) {
+        p.z = static_cast<float>(sqrt(1.0 - op));
+    } else {
+        p = glm::normalize(p);
+    }
+    return p;
+}
+
 int main(int argc, char* argv[])
 {
     (void)argc;
     (void)argv;
 
-
-    std::cout << "size: "<<sizeof(glm::vec3) << std::endl;
     // Setup windows and create context
     int width = 800;
     int height = 600;
+    int delta = 5;
 
     sf::ContextSettings settings;
     settings.depthBits = 24;
@@ -67,7 +81,7 @@ int main(int argc, char* argv[])
                                                   static_cast<float>(height),
                                        0.1f, 1000.0f);
     auto model =
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 5), glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, delta), glm::vec3(0.0f, 0.0f, 0.0f),
                     glm::vec3(0.0f, 1.0f, 0.0f));
     
     std::cout << glm::to_string(model) << std::endl;
@@ -121,15 +135,27 @@ int main(int argc, char* argv[])
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
                 running = false;
-            }
-            else if (event.type == sf::Event::Resized) {
+            } else if (event.type == sf::Event::Resized) {
                 glViewport(0, 0, event.size.width, event.size.height);
+            } else if (event.type == sf::Event::MouseWheelMoved) {
+                delta += event.mouseWheel.delta;
+                glm::mat3 eye = glm::inverse(glm::mat3(model));
+                glm::vec3 tran = eye * glm::vec3(0.0f,0.0f,delta);
+                model = glm::translate(model,tran);
+                normal = glm::transpose(glm::inverse(glm::mat3(model)));
+                delta = 0;
             }
+                
         }
         
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glBindVertexArray(vao);
         program.bind();
+        program.set_uniform("projectionMatrix", projection);
+        program.set_uniform("modelviewMatrix", model);
+        program.set_uniform("normalMatrix", normal);
+
+
         glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3, GL_UNSIGNED_INT,
                        nullptr);
         window.display();
