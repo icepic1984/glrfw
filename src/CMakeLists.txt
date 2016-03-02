@@ -5,7 +5,7 @@ set (src
 )
 
 if (WIN32)
-    set(RESOURCE_PATH "D:\\Projects\\glrfw\\resources")
+    set(RESOURCE_PATH "D:/Projects/glrfw/resources/")
 else ()
     set(RESOURCE_PATH "/home/icepic/Code/glrfw/resources/")
 endif()

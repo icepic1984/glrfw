@@ -118,8 +118,10 @@ shader::shader(shader_type type, const std::string& filename) :
     const char* data = source_.c_str();
     glShaderSource(handle_.get(), 1, &data, NULL);
     GLint result = compile_shader(handle_.get());
-    if (result == GL_FALSE)
+    if (result == GL_FALSE) {
+        std::cerr << "Error compiling: " << filename_ << std::endl;
         std::cerr << get_compile_log(handle_.get()) <<std::endl;
+    }
     THROW_IF(result == GL_FALSE, error_type::shader_not_compiled);
     compiled_ = true;
 }
@@ -156,8 +158,9 @@ void shader::compile()
     const char* data = source_.c_str();
     glShaderSource(handle_.get(), 1, &data, NULL);
     GLint result = compile_shader(handle_.get());
-    if (result == GL_FALSE)
+    if (result == GL_FALSE) {
         std::cerr << get_compile_log(handle_.get()) <<std::endl;
+    }
     THROW_IF(result == GL_FALSE,error_type::shader_not_compiled);
     compiled_ = true;
 }

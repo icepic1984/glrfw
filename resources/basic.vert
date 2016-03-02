@@ -6,8 +6,7 @@ in vec3 in_Normals;
 
 void main()
 {
-    Color = VertexColor;
-    gl_Position = vec4(VertexPosition, 1.0);
+    gl_Position = vec4(in_Position, 1.0);
 }
 
 

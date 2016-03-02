@@ -4,7 +4,7 @@
 #include <iostream>
 #include "error.hpp"
 #include "mesh.hpp"
-
+#include "config.h"
 #include "glutils.hpp"
 #include "shader.hpp"
 
@@ -18,9 +18,6 @@ int main(int argc, char* argv[])
     // Setup windows and create context
     int width = 800;
     int height = 600;
-
-    glrfw::mesh mesh =
-        glrfw::parse_stl("/home/icepic/Code/glrfw/resources/mesh.stl");
 
     sf::ContextSettings settings;
     settings.depthBits = 24;
@@ -51,15 +48,16 @@ int main(int argc, char* argv[])
     std::cout << glrfw::gl_version_string() << std::endl;
 
     // load mesh
-    glrfw::mesh mesh = glrfw::parse_stl("D:\\Meshes\\monkey.stl");
+    glrfw::mesh mesh =
+        glrfw::parse_stl(glrfw::resource_path + std::string("mesh.stl"));
     std::cout << mesh.vertices.size() << std::endl;
 
     // load vertex and fragment shader
     glrfw::shader vertex(glrfw::shader_type::vertex,
-                         "/home/icepic/Code/glrfw/resources/pixel.vert");
-
+                         glrfw::resource_path + std::string("pixel.vert"));
+    
     glrfw::shader fragment(glrfw::shader_type::fragment,
-                           "/home/icepic/Code/glrfw/resources/pixel.frag");
+                           glrfw::resource_path + std::string("pixel.frag"));
 
     // create program
     glrfw::program program(std::move(vertex),std::move(fragment));
