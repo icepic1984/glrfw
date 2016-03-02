@@ -3,9 +3,11 @@
 precision highp float;
 
 //Vertex-attributes
-layout(location = 0) in vec4 in_Position;
-layout(location = 1) in vec3 in_Normals;
+//layout(location = 0) in vec4 in_Position;
+//layout(location = 1) in vec3 in_Normals;
 
+in vec4 in_Position;
+in vec3 in_Normals;
 
 out vec3 normal;
 out vec3 lightdir;

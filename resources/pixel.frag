@@ -10,7 +10,7 @@ out vec4 out_color;
 uniform vec4 colorAmbient = vec4(1.0f,1.0f,1.0f,0.1f);
 uniform vec4 colorDiffuse = vec4(0.7f,0.7f,0.7f,0.7f);
 uniform vec4 colorSpecular = vec4(1.0f,1.0f,1.0f,0.5f);
-uniform float shininess = 100f;
+uniform float shininess = 100.0f;
 
 
 
@@ -52,6 +52,6 @@ void main(void) {
         spec = pow(nDotR,shininess);
 
    out_color = vec4(ambient * ka + diffuse*nDotL*kd + specular * spec * ks,1);
-  // out_color=vec4(normal,1.0f);
 
 }
+
