@@ -32,6 +32,7 @@ int main(int argc, char* argv[])
     int width = 800;
     int height = 600;
     int delta = 5;
+    
 
     sf::ContextSettings settings;
     settings.depthBits = 24;
@@ -39,7 +40,7 @@ int main(int argc, char* argv[])
     settings.antialiasingLevel = 4;
     settings.majorVersion = 3;
     settings.minorVersion = 3;
-    settings.attributeFlags = sf::ContextSettings::Core;
+    settings.attributeFlags = sf::ContextSettings::Debug;
     sf::Window window(sf::VideoMode(width, height), "OpenGL", sf::Style::Default,
                       settings);
     window.setVerticalSyncEnabled(true);
@@ -63,7 +64,7 @@ int main(int argc, char* argv[])
 
     // load mesh
     glrfw::mesh mesh =
-        glrfw::parse_stl(glrfw::resource_path + std::string("mesh.stl"));
+        glrfw::parse_stl(glrfw::resource_path + std::string("kiefer.stl"));
     std::cout << mesh.vertices.size() << std::endl;
 
     // load vertex and fragment shader
@@ -131,6 +132,9 @@ int main(int argc, char* argv[])
 
     glm::vec2 start_pos;
     glm::vec2 cur_pos;
+    glm::vec3 light_pos(0,0,100);
+    float angle = 0.0f;
+    bool move_light = false;
     
     while (running) {
         sf::Event event;
@@ -159,9 +163,12 @@ int main(int argc, char* argv[])
                     start_pos.y = static_cast<float>(event.mouseButton.y);
                     cur_pos.x = static_cast<float>(event.mouseButton.x);
                     cur_pos.y = static_cast<float>(event.mouseButton.y);
+                } else if (event.mouseButton.button = sf::Mouse::Right) {
+                    move_light = true;
                 }
             } else if (event.type == sf::Event::MouseButtonReleased) {
                 mouse_pressed = false;
+                move_light = false;
             } else if (event.type == sf::Event::MouseMoved) {
                 if (mouse_pressed) {
                     cur_pos.x = static_cast<float>(event.mouseMove.x);
@@ -184,15 +191,23 @@ int main(int argc, char* argv[])
             }
         }
 
-        std::cout << "Mouse: " << mouse_pressed << std::endl;
-        std::cout << glm::to_string(start_pos) << std::endl;
-        std::cout << glm::to_string(cur_pos) << std::endl;
+        if ( move_light) {
+            angle += 10;
+            if (angle > 360)
+                angle = 0.0;
+            light_pos.x = 100.0f * cos(glm::radians(angle));
+            light_pos.y = 100.0f * sin(glm::radians(angle));
+        }
+        
+        std::cout << glm::to_string(light_pos) << std::endl;
+                
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glBindVertexArray(vao);
         program.bind();
         program.set_uniform("projectionMatrix", projection);
         program.set_uniform("modelviewMatrix", model);
         program.set_uniform("normalMatrix", normal);
+        program.set_uniform("lightpos",light_pos);
 
 
         glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3, GL_UNSIGNED_INT,

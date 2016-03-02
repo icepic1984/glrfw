@@ -17,7 +17,7 @@ uniform mat4 modelviewMatrix;
 uniform mat4 projectionMatrix;
 uniform mat3 normalMatrix;
 
-uniform vec3 lightpos = vec3(0.0,0.0,5.0);
+uniform vec3 lightpos;// = vec3(0.0,0.0,5.0);
 
 
 void main(void) {
@@ -30,6 +30,7 @@ void main(void) {
 
 	//Transform vertex to eye-space
     vec4 position = modelviewMatrix * in_Position;
+    vec4 ml = modelviewMatrix * vec4(lightpos,1.0f);
 
 	//Pass position to fragment-shader
 	//Interpolate thought the polygon
@@ -37,7 +38,8 @@ void main(void) {
 
     //Calculate vector from surface to light
 	//and pass it to fragment-shader
-    lightdir = normalize(lightpos - position.xyz);
+    //lightdir = normalize(lightpos - position.xyz);
+    lightdir = normalize(ml.xyz - position.xyz);
 
 	//Transform vertex to clip-space
     gl_Position = projectionMatrix * position;
