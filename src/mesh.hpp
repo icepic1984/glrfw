@@ -26,6 +26,10 @@ public:
 
     void update_neighbors(int vert_index, int tri_index);
 
+    int find_index(const glm::vec3& vertex);
+
+    void centralize();
+
     std::vector<glm::vec3> vertices;
 
     std::vector<glm::vec3> vertex_normals;
@@ -34,6 +38,21 @@ public:
 
     std::vector<glm::ivec3> triangles;
 
+    struct glm_hash {
+        size_t operator()(const glm::vec3& k) const
+        {
+            return std::hash<float>()(k.x) ^ std::hash<float>()(k.y) ^
+                   std::hash<float>()(k.z);
+        }
+
+        bool operator()(const glm::vec3& a, const glm::vec3& b) const
+        {
+            return a == b;
+        } 
+    };
+
+    std::unordered_map<glm::vec3,int,glm_hash,glm_hash> indices;
+    
     std::unordered_map<int, std::vector<int>> neighbors;
 };
 

@@ -18,21 +18,14 @@ mesh::mesh()
 void mesh::add_triangle(const glm::vec3& a, const glm::vec3& b,
                         const glm::vec3& c)
 {
-    int index_a = -1;
-    int index_b = -1;
-    int index_c = -1;
-
-    for (int i = 0; i < static_cast<int>(vertices.size()); ++i) {
-        if (vertices[i] == a)
-            index_a = i;
-        if (vertices[i] == b)
-            index_b = i;
-        if (vertices[i] == c)
-            index_c = i;
-    }
+    int index_a = find_index(a);
+    int index_b = find_index(b);
+    int index_c = find_index(c);
+    
     index_a = update_vertex(a, index_a);
     index_b = update_vertex(b, index_b);
     index_c = update_vertex(c, index_c);
+
     triangles.push_back(glm::ivec3(index_a, index_b, index_c));
     glm::vec3 normal(glm::normalize(glm::cross((b - a), (c - a))));
     face_normals.push_back(normal);
@@ -67,10 +60,20 @@ void mesh::update_neighbors(int vert_index, int tri_index)
     }
 }
 
+int mesh::find_index(const glm::vec3& vertex)
+{
+    auto iter = indices.find(vertex);
+    if (iter != indices.end()) 
+        return iter->second;
+    else
+        return -1;
+}
 int mesh::update_vertex(const glm::vec3& vertex, int index)
 {
     if (index == -1) {
         vertices.push_back(vertex);
+        indices.insert(
+            std::make_pair(vertex, static_cast<int>(vertices.size()) - 1));
         return static_cast<int>(vertices.size()) - 1;
     }
     else {
@@ -104,6 +107,16 @@ void mesh::print_neighbors()
     }
 }
 
+void mesh::centralize()
+{
+    glm::vec3 center = std::accumulate(
+        vertices.begin(), vertices.end(), glm::vec3(0, 0, 0),
+        [](const glm::vec3& a, const glm::vec3& b) { return a + b; });
+    center /= vertices.size();
+    std::transform(vertices.begin(), vertices.end(), vertices.begin(),
+                   [&center](const glm::vec3& cur) { return cur - center; });
+}
+
 mesh parse_stl(const std::string& file)
 {
     std::ifstream stl(file, std::ios::in | std::ios::binary);
@@ -122,14 +135,13 @@ mesh parse_stl(const std::string& file)
             stl.read(reinterpret_cast<char*>(&c), sizeof(c));
             stl.seekg(sizeof(uint16_t), std::ifstream::cur);
             mesh.add_triangle(a, b, c);
-            if (i % 10000 == 0)
-                std::cout << i << " from: " << num_tri << std::endl;
         }
     }
     else {
 	    THROW_IF(!stl.is_open(),error_type::file_not_found);
     }
     mesh.calculate_normals();
+    mesh.centralize();
     return mesh;
 }
 }
