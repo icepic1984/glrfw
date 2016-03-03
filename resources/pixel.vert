@@ -12,6 +12,7 @@ in vec3 in_Normals;
 out vec3 normal;
 out vec3 lightdir;
 out vec3 epos;
+out vec4 depth;
 
 uniform mat4 modelviewMatrix;
 uniform mat4 projectionMatrix;
@@ -30,6 +31,7 @@ void main(void) {
 
 	//Transform vertex to eye-space
     vec4 position = modelviewMatrix * in_Position;
+    
     vec4 ml = modelviewMatrix * vec4(lightpos,1.0f);
 
 	//Pass position to fragment-shader

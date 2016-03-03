@@ -11,7 +11,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Weffc++ -pedantic  \
     -Wfloat-equal  -Wformat  -Wformat=2 \
     -Wformat-nonliteral -Wformat-security  \
     -Wformat-y2k \
-    -Wimport  -Winit-self  -Winline \
+    -Wimport  -Winit-self  \
     -Winvalid-pch   \
     -Wunsafe-loop-optimizations  -Wlong-long -Wmissing-braces \
     -Wmissing-field-initializers -Wmissing-format-attribute   \
@@ -36,6 +36,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/extern/glm-0.9.7.2/)
 include_directories(${GLEW_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${OPENGL_INCLUDE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/extern/stb)
 
 message(${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(src)

@@ -3,7 +3,7 @@
 in vec3 epos;
 in vec3 lightdir;
 in vec3 normal;
-
+in vec4 depth;
 
 out vec4 out_color;
 
@@ -51,7 +51,8 @@ void main(void) {
     else 
         spec = pow(nDotR,shininess);
 
-   out_color = vec4(ambient * ka + diffuse*nDotL*kd + specular * spec * ks,1);
+    out_color = vec4(ambient * ka + diffuse*nDotL*kd + specular * spec * ks,1);
+
 
 }
 

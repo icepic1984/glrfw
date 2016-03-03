@@ -19,7 +19,6 @@ std::vector<glm::vec3> quad
     {1.0f,1.0f,0.0f}
 };
 
-
 glm::vec3 getArcBall(const glm::vec2 pos, int width, int height)
 {
     glm::vec3 p =
@@ -98,8 +97,8 @@ int main(int argc, char* argv[])
     glrfw::shader fragment_quad(glrfw::shader_type::fragment,
                                  glrfw::resource_path +
                                      std::string("quad.frag"));
-    glrfw::program program_quad(std::move(vertex_depth),
-                                 std::move(fragment_depth));
+    glrfw::program program_quad(std::move(vertex_quad),
+                                 std::move(fragment_quad));
 
     // create matrices
     auto projection = glm::perspective(45.0f, static_cast<float>(width) /
@@ -123,7 +122,6 @@ int main(int argc, char* argv[])
 
     std::cout << "Depth Program: " << std::endl;
     program_depth.set_attribute(0, "in_Position");
-    program_depth.set_attribute(1, "in_Normals");
     program_depth.link();
     program_depth.bind();
     program_depth.set_uniform("projectionMatrix", projection);
@@ -131,7 +129,7 @@ int main(int argc, char* argv[])
     std::cout << program_depth.attributes() << std::endl;
     std::cout << program_depth.uniforms() << std::endl;
 
-    std::cout << "Depth Program: " << std::endl;
+    std::cout << "Quad Program: " << std::endl;
     program_quad.set_attribute(0, "in_Position");
     program_quad.link();
     program_quad.bind();
@@ -150,41 +148,43 @@ int main(int argc, char* argv[])
     // Set up view port
     glViewport(0,0,width,height);
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glEnable(GL_CULL_FACE);
     //glEnable (GL_BLEND);
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glClearColor(0.0f,0.0f,0.0f,1.0f);
     glPointSize(10.0f);
 
     // Create framebuffer object
+    GLuint fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    // Create texture object
     GLfloat border[] = {1.0f, 0.0f, 0.0f, 0.0f};
     GLuint depth_tex;
     glGenTextures(1, &depth_tex);
     glBindTexture(GL_TEXTURE_2D, depth_tex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0,
-                 GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
+                 GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
-                    GL_COMPARE_REF_TO_TEXTURE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+   	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
+    //                GL_COMPARE_REF_TO_TEXTURE);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
 
-    // Bind texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, depth_tex);
-
-    // Create framebuffer
-    GLuint fbo;
-    glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
                            depth_tex, 0);
     GLenum draw_buffers[] = {GL_NONE};
-    glDrawBuffers(1,draw_buffers);
+    glDrawBuffers(1, draw_buffers);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        return false;
     glBindFramebuffer(GL_FRAMEBUFFER,0);
-    
 
     // Generate vertex buffer ojects
     GLuint vbos[5];
@@ -204,13 +204,13 @@ int main(int argc, char* argv[])
     glBindBuffer(GL_ARRAY_BUFFER,vbos[4]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * quad.size(), &quad[0],
                  GL_STATIC_DRAW);
-    
-
 
     // Generate vertex array objects and bind mesh vbos to the current
     // vao
     GLuint vao[3];
     glGenVertexArrays(3, &vao[0]);
+
+    // Bind vbo for rendering mesh to vao
     glBindVertexArray(vao[0]);
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
@@ -337,21 +337,50 @@ int main(int argc, char* argv[])
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3),&light_pos);
 
         }
-        
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glBindVertexArray(vao[0]);
-        program.bind();
-        program.set_uniform("projectionMatrix", projection);
-        program.set_uniform("modelviewMatrix", model);
-        program.set_uniform("normalMatrix", normal);
-        program.set_uniform("lightpos",light_pos);
-        glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3, GL_UNSIGNED_INT,
-                       nullptr);
-        glBindVertexArray(vao[1]);
-        program_point.bind();
-        program_point.set_uniform("projectionMatrix", projection);
-        program_point.set_uniform("modelviewMatrix", model);
-        glDrawArrays(GL_POINTS,0,1);
+        program_depth.bind();
+        program_depth.set_uniform("projectionMatrix", projection);
+        program_depth.set_uniform("modelviewMatrix", model);
+        glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3,
+                        GL_UNSIGNED_INT, nullptr);
+        program_depth.unbind();
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, depth_tex);
+        program_quad.bind();
+        int loc = glGetUniformLocation(program_quad.get(), "tex");
+        if (loc >= 0)
+            glUniform1i(loc, 0);
+        else
+            return false;
+        glBindVertexArray(vao[2]);
+        glDrawArrays(GL_TRIANGLES, 0, quad.size() * 3);
+        program_quad.unbind();
+
+        // glBindVertexArray(vao[1]);
+        // program_point.bind();
+        // program_point.set_uniform("projectionMatrix", projection);
+        // program_point.set_uniform("modelviewMatrix", model);
+        // glDrawArrays(GL_POINTS,0,1);
+
+        // glBindVertexArray(vao[0]);
+        // program.bind();
+        // program.set_uniform("projectionMatrix", projection);
+        // program.set_uniform("modelviewMatrix", model);
+        // program.set_uniform("normalMatrix", normal);
+        // program.set_uniform("lightpos",light_pos);
+        // glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3, GL_UNSIGNED_INT,
+        //                nullptr);
+        // glBindVertexArray(vao[1]);
+        // program_point.bind();
+        // program_point.set_uniform("projectionMatrix", projection);
+        // program_point.set_uniform("modelviewMatrix", model);
+        // glDrawArrays(GL_POINTS,0,1);
         window.display();
     }
     return 0;
