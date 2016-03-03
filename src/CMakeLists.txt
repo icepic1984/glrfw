@@ -13,7 +13,10 @@ endif()
 configure_file(config.h.in ${CMAKE_CURRENT_LIST_DIR}/config.h)
 add_library(libglrfw ${src})
 
+add_library(lodepng lodepng.cpp)
+
 add_executable(glrfw main.cpp)
-target_link_libraries(glrfw libglrfw ${SFML_LIBRARIES} ${GLEW_LIBRARIES} ${OPENGL_gl_LIBRARY} pthread)
+target_link_libraries(glrfw libglrfw lodepng ${SFML_LIBRARIES} ${GLEW_LIBRARIES} ${OPENGL_gl_LIBRARY} pthread)
+
 
 
