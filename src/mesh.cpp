@@ -11,6 +11,7 @@ mesh::mesh()
       vertex_normals(std::vector<glm::vec3>()),
       face_normals(std::vector<glm::vec3>()),
       triangles(std::vector<glm::ivec3>()),
+      indices(std::unordered_map<glm::vec3,int,glm_hash,glm_hash>()),
       neighbors(std::unordered_map<int, std::vector<int>>())
 {
 }
