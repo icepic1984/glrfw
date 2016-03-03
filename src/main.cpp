@@ -48,8 +48,8 @@ int main(int argc, char* argv[])
     settings.depthBits = 24;
     settings.stencilBits = 8;
     settings.antialiasingLevel = 4;
-    settings.majorVersion = 3;
-    settings.minorVersion = 3;
+    settings.majorVersion = 4;
+    settings.minorVersion = 0;
     settings.attributeFlags = sf::ContextSettings::Debug;
     sf::Window window(sf::VideoMode(viewport_size.x, viewport_size.y), "OpenGL",
                       sf::Style::Default, settings);
@@ -108,6 +108,7 @@ int main(int argc, char* argv[])
         glm::lookAt(glm::vec3(0.0f, 0.0f, delta), glm::vec3(0.0f, 0.0f, 0.0f),
                     glm::vec3(0.0f, 1.0f, 0.0f));
     auto normal = glm::transpose(glm::inverse(glm::mat3(model)));
+
 
     std::cout << "Program: " << std::endl;
     program.set_attribute(0, "in_Position");
@@ -172,9 +173,9 @@ int main(int argc, char* argv[])
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
-    //                GL_COMPARE_REF_TO_TEXTURE);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
+    //                 GL_COMPARE_REF_TO_TEXTURE);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
                            depth_tex, 0);
@@ -239,6 +240,18 @@ int main(int argc, char* argv[])
     glm::vec3 light_pos(0,0,0);
     float rotation_angle = 0.0f;
     bool move_light = false;
+
+    glm::mat4 biasMatrix(0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5,
+                         0.0, 0.5, 0.5, 0.5, 1.0);
+
+    auto depth_projection =
+        glm::perspective(45.0f, static_cast<float>(depthmap_size.x) /
+                                    static_cast<float>(depthmap_size.y),
+                         0.1f, 1000.0f);
+    auto depth_view =
+        glm::lookAt(light_pos, glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
+    
+    auto shadow_matrix = biasMatrix * depth_projection * depth_view;
 
     glBindBuffer(GL_ARRAY_BUFFER, vbos[3]);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3), &light_pos);
@@ -319,20 +332,29 @@ int main(int argc, char* argv[])
 
         }
 
+        depth_projection =
+        glm::perspective(45.0f, static_cast<float>(depthmap_size.x) /
+                                    static_cast<float>(depthmap_size.y),
+                         0.1f, 1000.0f);
+        depth_view =
+            glm::lookAt(light_pos, glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
+
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glViewport(0,0,depthmap_size.x,depthmap_size.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glBindVertexArray(vao[0]);
         program_depth.bind();
-        program_depth.set_uniform("projectionMatrix", projection);
-        program_depth.set_uniform("modelviewMatrix", model);
+        program_depth.set_uniform("projectionMatrix", depth_projection);
+        program_depth.set_uniform("modelviewMatrix", depth_view);
         glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3,
                         GL_UNSIGNED_INT, nullptr);
         program_depth.unbind();
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        glViewport(0,0,viewport_size.x,viewport_size.y);
+        glViewport(0, 0, viewport_size.x, viewport_size.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        //Render depth map to screen
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, depth_tex);
         program_quad.bind();
@@ -345,11 +367,13 @@ int main(int argc, char* argv[])
         glDrawArrays(GL_TRIANGLES, 0, quad.size() * 3);
         program_quad.unbind();
 
+
         // glBindVertexArray(vao[1]);
         // program_point.bind();
         // program_point.set_uniform("projectionMatrix", projection);
         // program_point.set_uniform("modelviewMatrix", model);
         // glDrawArrays(GL_POINTS,0,1);
+        // program_point.unbind();
 
         // glBindVertexArray(vao[0]);
         // program.bind();
@@ -359,6 +383,7 @@ int main(int argc, char* argv[])
         // program.set_uniform("lightpos",light_pos);
         // glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3, GL_UNSIGNED_INT,
         //                nullptr);
+        // program_point.unbind();
         // glBindVertexArray(vao[1]);
         // program_point.bind();
         // program_point.set_uniform("projectionMatrix", projection);
