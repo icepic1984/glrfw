@@ -103,6 +103,7 @@ int main(int argc, char* argv[])
     std::cout << program_point.attributes() << std::endl;
     std::cout << program_point.uniforms() << std::endl;
     
+    // Set up view port
     glViewport(0,0,width,height);
     glEnable(GL_DEPTH_TEST);
     glEnable (GL_BLEND);
@@ -110,6 +111,38 @@ int main(int argc, char* argv[])
 	glClearColor(0.0f,0.0f,0.0f,1.0f);
     glPointSize(10.0f);
 
+    // Create framebuffer object
+    GLfloat border[] = {1.0f, 0.0f, 0.0f, 0.0f};
+    GLuint depth_tex;
+    glGenTextures(1, &depth_tex);
+    glBindTexture(GL_TEXTURE_2D, depth_tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0,
+                 GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
+                    GL_COMPARE_REF_TO_TEXTURE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+
+    // Bind texture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, depth_tex);
+
+    // Create framebuffer
+    GLuint fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+                           depth_tex, 0);
+    GLenum draw_buffers[] = {GL_NONE};
+    glDrawBuffers(1,draw_buffers);
+    glBindFramebuffer(GL_FRAMEBUFFER,0);
+    
+
+    // Generate vertex buffer ojects
     GLuint vbos[4];
     glGenBuffers(4,&vbos[0]);
     glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
@@ -125,6 +158,8 @@ int main(int argc, char* argv[])
     glBindBuffer(GL_ARRAY_BUFFER,vbos[3]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3), nullptr, GL_DYNAMIC_DRAW);
 
+    // Generate vertex array objects and bind mesh vbos to the current
+    // vao
     GLuint vao[2];
     glGenVertexArrays(2, &vao[0]);
     glBindVertexArray(vao[0]);
@@ -136,6 +171,7 @@ int main(int argc, char* argv[])
     glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,0,0); 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,vbos[1]);
     
+    // Bind vbo for rendering of point light to vao
     glBindVertexArray(vao[1]);
     glBindBuffer(GL_ARRAY_BUFFER, vbos[3]);
     glEnableVertexAttribArray(0);
@@ -146,8 +182,8 @@ int main(int argc, char* argv[])
 
     glm::vec2 start_pos;
     glm::vec2 cur_pos;
-    glm::vec3 light_pos(0,0,100);
-    float angle = 0.0f;
+    glm::vec3 light_pos(0,0,0);
+    float rotation_angle = 0.0f;
     bool move_light = false;
 
     glBindBuffer(GL_ARRAY_BUFFER, vbos[3]);
@@ -180,7 +216,7 @@ int main(int argc, char* argv[])
                     start_pos.y = static_cast<float>(event.mouseButton.y);
                     cur_pos.x = static_cast<float>(event.mouseButton.x);
                     cur_pos.y = static_cast<float>(event.mouseButton.y);
-                } else if (event.mouseButton.button = sf::Mouse::Right) {
+                } else if (event.mouseButton.button == sf::Mouse::Right) {
                     move_light = true;
                 }
             } else if (event.type == sf::Event::MouseButtonReleased) {
@@ -198,7 +234,8 @@ int main(int argc, char* argv[])
             if( cur_pos != start_pos) {
                 glm::vec3 va = getArcBall(start_pos, width, height);
                 glm::vec3 vb = getArcBall(cur_pos, width, height);
-                float angle = acos(std::min(1.0f, glm::dot(va, vb)));
+                float angle = static_cast<float>(
+                    std::acos(std::min(1.0f, glm::dot(va, vb))));
                 glm::vec3 axis = glm::cross(va, vb);
                 glm::mat3 eye = glm::inverse(glm::mat3(model));
                 glm::vec3 obj_axis = eye * axis;
@@ -209,11 +246,13 @@ int main(int argc, char* argv[])
         }
 
         if ( move_light) {
-            angle += 10;
-            if (angle > 360)
-                angle = 0.0;
-            light_pos.x = 100.0f * cos(glm::radians(angle));
-            light_pos.y = 100.0f * sin(glm::radians(angle));
+            rotation_angle += 10;
+            if (rotation_angle > 360)
+                rotation_angle = 0.0;
+            light_pos.x = 100.0f * static_cast<float>(
+                                       std::cos(glm::radians(rotation_angle)));
+            light_pos.y = 100.0f * static_cast<float>(
+                                       std::sin(glm::radians(rotation_angle)));
 
             glBindVertexArray(vao[1]);
             glBindBuffer(GL_ARRAY_BUFFER,vbos[3]);
@@ -222,6 +261,7 @@ int main(int argc, char* argv[])
         }
         
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glBindVertexArray(vao[0]);
         program.bind();
         program.set_uniform("projectionMatrix", projection);
