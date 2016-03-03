@@ -91,6 +91,14 @@ int main(int argc, char* argv[])
     glrfw::program program_depth(std::move(vertex_depth),
                                  std::move(fragment_depth));
 
+    glrfw::shader vertex_shadow(glrfw::shader_type::vertex,
+                               glrfw::resource_path + std::string("shadow.vert"));
+    glrfw::shader fragment_shadow(glrfw::shader_type::fragment,
+                                  glrfw::resource_path +
+                                      std::string("shadow.frag"));
+    glrfw::program program_shadow(std::move(vertex_shadow),
+                                  std::move(fragment_shadow));
+
     glrfw::shader vertex_quad(glrfw::shader_type::vertex,
                                glrfw::resource_path + std::string("quad.vert"));
     glrfw::shader fragment_quad(glrfw::shader_type::fragment,
@@ -137,6 +145,14 @@ int main(int argc, char* argv[])
     std::cout << program_quad.attributes() << std::endl;
     std::cout << program_quad.uniforms() << std::endl;
 
+    std::cout << "Shadow Program: " << std::endl;
+    program_shadow.set_attribute(0, "in_Position");
+    program_shadow.set_attribute(1, "in_Normals");
+    program_shadow.link();
+    program_shadow.bind();
+    std::cout << program_shadow.attributes() << std::endl;
+    std::cout << program_shadow.uniforms() << std::endl;
+
     std::cout << "Point Program: " << std::endl;
     program_point.set_attribute(0, "in_Position");
     program_point.link();
@@ -173,9 +189,9 @@ int main(int argc, char* argv[])
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
-    //                 GL_COMPARE_REF_TO_TEXTURE);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
+                    GL_COMPARE_REF_TO_TEXTURE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
                            depth_tex, 0);
@@ -339,9 +355,13 @@ int main(int argc, char* argv[])
         depth_view =
             glm::lookAt(light_pos, glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
 
+        shadow_matrix = biasMatrix * depth_projection * depth_view;
+
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glViewport(0,0,depthmap_size.x,depthmap_size.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
         glBindVertexArray(vao[0]);
         program_depth.bind();
         program_depth.set_uniform("projectionMatrix", depth_projection);
@@ -353,19 +373,36 @@ int main(int argc, char* argv[])
 
         glViewport(0, 0, viewport_size.x, viewport_size.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glDisable(GL_CULL_FACE);
 
         //Render depth map to screen
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, depth_tex);
-        program_quad.bind();
-        int loc = glGetUniformLocation(program_quad.get(), "tex");
+        glBindVertexArray(vao[0]);
+        program_shadow.bind();
+        program_shadow.set_uniform("projectionMatrix", projection);
+        program_shadow.set_uniform("modelviewMatrix", model);
+        //program_shadow.set_uniform("normalMatrix", normal);
+        //program_shadow.set_uniform("lightpos",light_pos);
+        program_shadow.set_uniform("shadowMatrix",shadow_matrix);
+        int loc = glGetUniformLocation(program_shadow.get(), "ShadowMap");
         if (loc >= 0)
             glUniform1i(loc, 0);
         else
             return false;
-        glBindVertexArray(vao[2]);
-        glDrawArrays(GL_TRIANGLES, 0, quad.size() * 3);
-        program_quad.unbind();
+        glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3, GL_UNSIGNED_INT,
+                        nullptr);
+        program_shadow.unbind();
+        glBindVertexArray(vao[1]);
+        program_point.bind();
+        program_point.set_uniform("projectionMatrix", projection);
+        program_point.set_uniform("modelviewMatrix", model);
+        glDrawArrays(GL_POINTS,0,1);
+
+        
+        // glBindVertexArray(vao[2]);
+        // glDrawArrays(GL_TRIANGLES, 0, quad.size() * 3);
+        // program_quad.unbind();
 
 
         // glBindVertexArray(vao[1]);
