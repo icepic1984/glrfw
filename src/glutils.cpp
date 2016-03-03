@@ -102,6 +102,12 @@ void GLAPIENTRY debug_callback(GLenum source, GLenum type, GLuint id,
                                GLenum severity, GLsizei length,
                                const GLchar* message, const void* userParam)
 {
-    std::cout << "Message: " << message << " Id: " << id << std::endl;
+    (void)type;
+    (void)severity;
+    (void)length;
+    (void)userParam;
+
+    std::cout << "Source: " << source_to_str(source) << " Message: " << message
+              << " Id: " << id << std::endl;
 }
 }
