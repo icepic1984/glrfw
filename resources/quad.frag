@@ -7,6 +7,11 @@ uniform sampler2D tex;
 
 void main()
 {
-    Color = texture(tex,TexCoords);
-    //Color = vec4(1.0f,1.0f,0.0f,1.0f);
+    float z = texture(tex,TexCoords);
+    float near = 0.1f;
+    float far = 100.0f;
+    float c = (2.0 * near) / (far + near - z * (far - near));
+    
+    //Color = texture(tex,TexCoords);
+    Color = vec4(c);
 }

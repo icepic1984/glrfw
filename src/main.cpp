@@ -40,11 +40,10 @@ int main(int argc, char* argv[])
     (void)argv;
 
     // Setup windows and create context
-    int width = 800;
-    int height = 600;
+    glm::ivec2 viewport_size(800,600);
+    glm::ivec2 depthmap_size(1024,1024);
     int delta = 5;
     
-
     sf::ContextSettings settings;
     settings.depthBits = 24;
     settings.stencilBits = 8;
@@ -52,8 +51,8 @@ int main(int argc, char* argv[])
     settings.majorVersion = 3;
     settings.minorVersion = 3;
     settings.attributeFlags = sf::ContextSettings::Debug;
-    sf::Window window(sf::VideoMode(width, height), "OpenGL", sf::Style::Default,
-                      settings);
+    sf::Window window(sf::VideoMode(viewport_size.x, viewport_size.y), "OpenGL",
+                      sf::Style::Default, settings);
     window.setVerticalSyncEnabled(true);
 
     // init glew to wrangle gl pointers
@@ -101,9 +100,10 @@ int main(int argc, char* argv[])
                                  std::move(fragment_quad));
 
     // create matrices
-    auto projection = glm::perspective(45.0f, static_cast<float>(width) /
-                                                  static_cast<float>(height),
-                                       0.1f, 1000.0f);
+    auto projection =
+        glm::perspective(45.0f, static_cast<float>(viewport_size.x) /
+                                    static_cast<float>(viewport_size.y),
+                         0.1f, 1000.0f);
     auto model =
         glm::lookAt(glm::vec3(0.0f, 0.0f, delta), glm::vec3(0.0f, 0.0f, 0.0f),
                     glm::vec3(0.0f, 1.0f, 0.0f));
@@ -146,10 +146,10 @@ int main(int argc, char* argv[])
     std::cout << program_point.uniforms() << std::endl;
     
     // Set up view port
-    glViewport(0,0,width,height);
+    glViewport(0,0,viewport_size.x,viewport_size.y);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-    glEnable(GL_CULL_FACE);
+    //glEnable(GL_CULL_FACE);
     //glEnable (GL_BLEND);
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glClearColor(0.0f,0.0f,0.0f,1.0f);
@@ -165,8 +165,8 @@ int main(int argc, char* argv[])
     GLuint depth_tex;
     glGenTextures(1, &depth_tex);
     glBindTexture(GL_TEXTURE_2D, depth_tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0,
-                 GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, depthmap_size.x,
+                 depthmap_size.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
    	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -181,6 +181,7 @@ int main(int argc, char* argv[])
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
                            depth_tex, 0);
     GLenum draw_buffers[] = {GL_NONE};
+
     glDrawBuffers(1, draw_buffers);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         return false;
@@ -250,13 +251,13 @@ int main(int argc, char* argv[])
             if (event.type == sf::Event::Closed) {
                 running = false;
             } else if (event.type == sf::Event::Resized) {
-                width = event.size.width;
-                height = event.size.height;
-                glViewport(0, 0, width, height);
-                projection =
-                    glm::perspective(45.0f, static_cast<float>(width) /
-                                                static_cast<float>(height),
-                                     0.1f, 1000.0f);
+                viewport_size.x = event.size.width;
+                viewport_size.y = event.size.height;
+                glViewport(0, 0, viewport_size.x, viewport_size.y);
+                projection = glm::perspective(
+                    45.0f, static_cast<float>(viewport_size.x) /
+                               static_cast<float>(viewport_size.y),
+                    0.1f, 1000.0f);
             } else if (event.type == sf::Event::MouseWheelMoved) {
                 delta += event.mouseWheel.delta;
                 glm::mat3 eye = glm::inverse(glm::mat3(model));
@@ -284,34 +285,16 @@ int main(int argc, char* argv[])
                 }
             } else if (event.type == sf::Event::KeyPressed) {
                 if (event.key.code == sf::Keyboard::P) {
-                    std::cout << "Capture frame buffer " << std::endl;
-                    std::vector<uint8_t> tmp(width*height*4,1);
-                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                    glBindFramebuffer(GL_FRAMEBUFFER,fbo);
-                    glBindVertexArray(vao[0]);
-                    program_depth.bind();
-                    program_depth.set_uniform("projectionMatrix", projection);
-                    program_depth.set_uniform("modelviewMatrix", model);
-                    glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3, GL_UNSIGNED_INT,
-                                   nullptr);
-                    program_depth.unbind();
-                    glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-                                  GL_UNSIGNED_BYTE, &tmp[0]);
-
-                    glBindFramebuffer(GL_FRAMEBUFFER,0);
-                     unsigned error =
-                         lodepng::encode("test.png", &tmp[0], width, height);
-                     std::cout << "Error: "<<error << std::endl;
-                     for (auto iter : tmp)
-                         std::cout << static_cast<int>(iter) << " ";
+                    // capture 
                 }
             }
         }
 
         if (mouse_pressed) {
             if( cur_pos != start_pos) {
-                glm::vec3 va = getArcBall(start_pos, width, height);
-                glm::vec3 vb = getArcBall(cur_pos, width, height);
+                glm::vec3 va =
+                    getArcBall(start_pos, viewport_size.x, viewport_size.y);
+                glm::vec3 vb = getArcBall(cur_pos, viewport_size.x, viewport_size.y);
                 float angle = static_cast<float>(
                     std::acos(std::min(1.0f, glm::dot(va, vb))));
                 glm::vec3 axis = glm::cross(va, vb);
@@ -339,6 +322,7 @@ int main(int argc, char* argv[])
         }
 
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glViewport(0,0,depthmap_size.x,depthmap_size.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glBindVertexArray(vao[0]);
         program_depth.bind();
@@ -349,6 +333,7 @@ int main(int argc, char* argv[])
         program_depth.unbind();
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+        glViewport(0,0,viewport_size.x,viewport_size.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, depth_tex);
