@@ -7,6 +7,18 @@
 #include "config.h"
 #include "glutils.hpp"
 #include "shader.hpp"
+#include "lodepng.h"
+
+std::vector<glm::vec3> quad 
+{
+    {-1.0f,-1.0f,0.0f},
+    {1.0f,-1.0f,0.0f},
+    {-1.0f,1.0f,0.0f},
+    {-1.0f,1.0f,0.0f},
+    {1.0f,-1.0f,0.0f},
+    {1.0f,1.0f,0.0f}
+};
+
 
 glm::vec3 getArcBall(const glm::vec2 pos, int width, int height)
 {
@@ -57,14 +69,13 @@ int main(int argc, char* argv[])
     // load mesh
     glrfw::mesh mesh =
         glrfw::parse_stl(glrfw::resource_path + std::string("kiefer.stl"));
-    std::cout << mesh.vertices.size() << std::endl;
 
     // load vertex and fragment shader
     glrfw::shader vertex(glrfw::shader_type::vertex,
                          glrfw::resource_path + std::string("pixel.vert"));
-    
     glrfw::shader fragment(glrfw::shader_type::fragment,
                            glrfw::resource_path + std::string("pixel.frag"));
+    glrfw::program program(std::move(vertex),std::move(fragment));
 
     glrfw::shader vertex_point(glrfw::shader_type::vertex,
                                glrfw::resource_path + std::string("point.vert"));
@@ -74,8 +85,22 @@ int main(int argc, char* argv[])
     glrfw::program program_point(std::move(vertex_point),
                                  std::move(fragment_point));
 
-    // create program
-    glrfw::program program(std::move(vertex),std::move(fragment));
+    glrfw::shader vertex_depth(glrfw::shader_type::vertex,
+                               glrfw::resource_path + std::string("depth.vert"));
+    glrfw::shader fragment_depth(glrfw::shader_type::fragment,
+                                 glrfw::resource_path +
+                                     std::string("depth.frag"));
+    glrfw::program program_depth(std::move(vertex_depth),
+                                 std::move(fragment_depth));
+
+    glrfw::shader vertex_quad(glrfw::shader_type::vertex,
+                               glrfw::resource_path + std::string("quad.vert"));
+    glrfw::shader fragment_quad(glrfw::shader_type::fragment,
+                                 glrfw::resource_path +
+                                     std::string("quad.frag"));
+    glrfw::program program_quad(std::move(vertex_depth),
+                                 std::move(fragment_depth));
+
     // create matrices
     auto projection = glm::perspective(45.0f, static_cast<float>(width) /
                                                   static_cast<float>(height),
@@ -85,6 +110,7 @@ int main(int argc, char* argv[])
                     glm::vec3(0.0f, 1.0f, 0.0f));
     auto normal = glm::transpose(glm::inverse(glm::mat3(model)));
 
+    std::cout << "Program: " << std::endl;
     program.set_attribute(0, "in_Position");
     program.set_attribute(1, "in_Normals");
     program.link();
@@ -95,6 +121,24 @@ int main(int argc, char* argv[])
     std::cout << program.attributes() << std::endl;
     std::cout << program.uniforms() << std::endl;
 
+    std::cout << "Depth Program: " << std::endl;
+    program_depth.set_attribute(0, "in_Position");
+    program_depth.set_attribute(1, "in_Normals");
+    program_depth.link();
+    program_depth.bind();
+    program_depth.set_uniform("projectionMatrix", projection);
+    program_depth.set_uniform("modelviewMatrix", model);
+    std::cout << program_depth.attributes() << std::endl;
+    std::cout << program_depth.uniforms() << std::endl;
+
+    std::cout << "Depth Program: " << std::endl;
+    program_quad.set_attribute(0, "in_Position");
+    program_quad.link();
+    program_quad.bind();
+    std::cout << program_quad.attributes() << std::endl;
+    std::cout << program_quad.uniforms() << std::endl;
+
+    std::cout << "Point Program: " << std::endl;
     program_point.set_attribute(0, "in_Position");
     program_point.link();
     program_point.bind();
@@ -106,8 +150,8 @@ int main(int argc, char* argv[])
     // Set up view port
     glViewport(0,0,width,height);
     glEnable(GL_DEPTH_TEST);
-    glEnable (GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //glEnable (GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glClearColor(0.0f,0.0f,0.0f,1.0f);
     glPointSize(10.0f);
 
@@ -143,8 +187,8 @@ int main(int argc, char* argv[])
     
 
     // Generate vertex buffer ojects
-    GLuint vbos[4];
-    glGenBuffers(4,&vbos[0]);
+    GLuint vbos[5];
+    glGenBuffers(5,&vbos[0]);
     glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
     glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(glm::vec3),
                  &mesh.vertices[0], GL_STATIC_DRAW);
@@ -157,11 +201,16 @@ int main(int argc, char* argv[])
                  &mesh.vertex_normals[0], GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER,vbos[3]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3), nullptr, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER,vbos[4]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * quad.size(), &quad[0],
+                 GL_STATIC_DRAW);
+    
+
 
     // Generate vertex array objects and bind mesh vbos to the current
     // vao
-    GLuint vao[2];
-    glGenVertexArrays(2, &vao[0]);
+    GLuint vao[3];
+    glGenVertexArrays(3, &vao[0]);
     glBindVertexArray(vao[0]);
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
@@ -176,7 +225,13 @@ int main(int argc, char* argv[])
     glBindBuffer(GL_ARRAY_BUFFER, vbos[3]);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,0); 
-    
+
+    // Bind vao for rendering quad
+    glBindVertexArray(vao[2]);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER,vbos[4]);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
     bool running = true;
     bool mouse_pressed = false;
 
@@ -227,6 +282,29 @@ int main(int argc, char* argv[])
                     cur_pos.x = static_cast<float>(event.mouseMove.x);
                     cur_pos.y = static_cast<float>(event.mouseMove.y);
                 }
+            } else if (event.type == sf::Event::KeyPressed) {
+                if (event.key.code == sf::Keyboard::P) {
+                    std::cout << "Capture frame buffer " << std::endl;
+                    std::vector<uint8_t> tmp(width*height*4,1);
+                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                    glBindFramebuffer(GL_FRAMEBUFFER,fbo);
+                    glBindVertexArray(vao[0]);
+                    program_depth.bind();
+                    program_depth.set_uniform("projectionMatrix", projection);
+                    program_depth.set_uniform("modelviewMatrix", model);
+                    glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3, GL_UNSIGNED_INT,
+                                   nullptr);
+                    program_depth.unbind();
+                    glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+                                  GL_UNSIGNED_BYTE, &tmp[0]);
+
+                    glBindFramebuffer(GL_FRAMEBUFFER,0);
+                     unsigned error =
+                         lodepng::encode("test.png", &tmp[0], width, height);
+                     std::cout << "Error: "<<error << std::endl;
+                     for (auto iter : tmp)
+                         std::cout << static_cast<int>(iter) << " ";
+                }
             }
         }
 
@@ -261,7 +339,6 @@ int main(int argc, char* argv[])
         }
         
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glBindVertexArray(vao[0]);
         program.bind();
         program.set_uniform("projectionMatrix", projection);
