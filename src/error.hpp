@@ -45,7 +45,7 @@ struct gl_error : std::runtime_error {
             std::ostringstream ss;                                             \
             ss << "Error on line " << __LINE__ << ": " << __PRETTY_FUNCTION__  \
                << " Failed: " << #EXP << std::endl;                            \
-            throw gl_error(ss.str(), TYPE);                                    \
+            throw glrfw::gl_error(ss.str(), TYPE);                      \
         }                                                                      \
     } while (0)
 }

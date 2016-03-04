@@ -11,7 +11,7 @@ void main()
     float near = 0.1f;
     float far = 100.0f;
     float c = (2.0 * near) / (far + near - z * (far - near));
-    
-    //Color = texture(tex,TexCoords);
     Color = vec4(c);
+    
 }
+

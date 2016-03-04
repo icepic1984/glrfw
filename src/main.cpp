@@ -8,15 +8,26 @@
 #include "glutils.hpp"
 #include "shader.hpp"
 #include "lodepng.h"
+#include "error.hpp"
+
+// std::vector<glm::vec3> quad 
+// {
+//     {-1.0f,-1.0f,0.0f},
+//     {1.0f,-1.0f,0.0f},
+//     {-1.0f,1.0f,0.0f},
+//     {-1.0f,1.0f,0.0f},
+//     {1.0f,-1.0f,0.0f},
+//     {1.0f,1.0f,0.0f}
+// };
 
 std::vector<glm::vec3> quad 
 {
     {-1.0f,-1.0f,0.0f},
-    {1.0f,-1.0f,0.0f},
-    {-1.0f,1.0f,0.0f},
-    {-1.0f,1.0f,0.0f},
-    {1.0f,-1.0f,0.0f},
-    {1.0f,1.0f,0.0f}
+    {-0.5f,-1.0f,0.0f},
+    {-1.0f,-0.5f,0.0f},
+    {-1.0f,-0.5f,0.0f},
+    {-0.5f,-1.0f,0.0f},
+    {-0.5f,-0.5f,0.0f}
 };
 
 glm::vec3 getArcBall(const glm::vec2 pos, int width, int height)
@@ -173,15 +184,15 @@ int main(int argc, char* argv[])
     glPointSize(10.0f);
 
     // Create framebuffer object
-    GLuint fbo;
-    glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    GLuint fbo[2];
+    glGenFramebuffers(2, &fbo[0]);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo[0]);
 
     // Create texture object
     GLfloat border[] = {1.0f, 0.0f, 0.0f, 0.0f};
-    GLuint depth_tex;
-    glGenTextures(1, &depth_tex);
-    glBindTexture(GL_TEXTURE_2D, depth_tex);
+    GLuint depth_tex[2];
+    glGenTextures(2, &depth_tex[0]);
+    glBindTexture(GL_TEXTURE_2D, depth_tex[0]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, depthmap_size.x,
                  depthmap_size.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -192,14 +203,27 @@ int main(int argc, char* argv[])
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
                     GL_COMPARE_REF_TO_TEXTURE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
-
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
-                           depth_tex, 0);
+                           depth_tex[0], 0);
     GLenum draw_buffers[] = {GL_NONE};
-
     glDrawBuffers(1, draw_buffers);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        return false;
+    THROW_IF(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE,
+             glrfw::error_type::uniform_not_found);
+
+    glBindFramebuffer(GL_FRAMEBUFFER,0);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo[1]);
+    glBindTexture(GL_TEXTURE_2D, depth_tex[1]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, depthmap_size.x,
+                 depthmap_size.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+                           depth_tex[1], 0);
+    glDrawBuffers(1, draw_buffers);
+    THROW_IF(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE,
+             glrfw::error_type::uniform_not_found);
     glBindFramebuffer(GL_FRAMEBUFFER,0);
 
     // Generate vertex buffer ojects
@@ -357,11 +381,24 @@ int main(int argc, char* argv[])
 
         shadow_matrix = biasMatrix * depth_projection * depth_view;
 
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo[0]);
         glViewport(0,0,depthmap_size.x,depthmap_size.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
+        glBindVertexArray(vao[0]);
+        program_depth.bind();
+        program_depth.set_uniform("projectionMatrix", depth_projection);
+        program_depth.set_uniform("modelviewMatrix", depth_view);
+        glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3,
+                        GL_UNSIGNED_INT, nullptr);
+        program_depth.unbind();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo[1]);
+        glViewport(0,0,depthmap_size.x,depthmap_size.y);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
         glBindVertexArray(vao[0]);
         program_depth.bind();
         program_depth.set_uniform("projectionMatrix", depth_projection);
@@ -377,19 +414,21 @@ int main(int argc, char* argv[])
 
         //Render depth map to screen
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, depth_tex);
+        glBindTexture(GL_TEXTURE_2D, depth_tex[0]);
         glBindVertexArray(vao[0]);
         program_shadow.bind();
         program_shadow.set_uniform("projectionMatrix", projection);
         program_shadow.set_uniform("modelviewMatrix", model);
-        //program_shadow.set_uniform("normalMatrix", normal);
-        //program_shadow.set_uniform("lightpos",light_pos);
+        program_shadow.set_uniform("normalMatrix", normal);
+        program_shadow.set_uniform("lightpos",light_pos);
         program_shadow.set_uniform("shadowMatrix",shadow_matrix);
         int loc = glGetUniformLocation(program_shadow.get(), "ShadowMap");
-        if (loc >= 0)
+        if (loc >= 0){
             glUniform1i(loc, 0);
-        else
+        } else {
+            std::cout << "sha" << std::endl;
             return false;
+        }
         glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3, GL_UNSIGNED_INT,
                         nullptr);
         program_shadow.unbind();
@@ -399,10 +438,19 @@ int main(int argc, char* argv[])
         program_point.set_uniform("modelviewMatrix", model);
         glDrawArrays(GL_POINTS,0,1);
 
-        
-        // glBindVertexArray(vao[2]);
-        // glDrawArrays(GL_TRIANGLES, 0, quad.size() * 3);
-        // program_quad.unbind();
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, depth_tex[1]);
+        glBindVertexArray(vao[2]);
+        program_quad.bind();
+        loc = glGetUniformLocation(program_quad.get(), "tex");
+        if (loc >= 0){
+            glUniform1i(loc, 1);
+        } else {
+            std::cout << "df" << std::endl;
+            return false;
+        }
+        glDrawArrays(GL_TRIANGLES, 0, quad.size() * 3);
+        program_quad.unbind();
 
 
         // glBindVertexArray(vao[1]);

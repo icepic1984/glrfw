@@ -53,10 +53,12 @@ void main(void) {
         spec = pow(nDotR,shininess);
 
     float shadow = textureProj(ShadowMap,shadow_coord);
+    //if ( shadow > 0.8)
+    //    shadow = 0.5;
 
-    //  out_color = vec4(
-    //  ambient * ka + diffuse * nDotL * kd * shadow + specular * spec * ks, 1);
+     out_color = vec4(ambient * ka + shadow * diffuse * nDotL * kd +
+                      specular * spec * ks * shadow, 1);
     //out_color = vec4(nDotL *diffuse * shadow+ambient,1);
-    out_color = vec4(shadow,shadow,shadow,1);
+    //out_color = vec4(shadow,shadow,shadow,1);
     
 }
