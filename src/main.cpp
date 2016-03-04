@@ -10,16 +10,6 @@
 #include "lodepng.h"
 #include "error.hpp"
 
-// std::vector<glm::vec3> quad 
-// {
-//     {-1.0f,-1.0f,0.0f},
-//     {1.0f,-1.0f,0.0f},
-//     {-1.0f,1.0f,0.0f},
-//     {-1.0f,1.0f,0.0f},
-//     {1.0f,-1.0f,0.0f},
-//     {1.0f,1.0f,0.0f}
-// };
-
 std::vector<glm::vec3> quad 
 {
     {-1.0f,-1.0f,0.0f},
@@ -52,7 +42,7 @@ int main(int argc, char* argv[])
 
     // Setup windows and create context
     glm::ivec2 viewport_size(800,600);
-    glm::ivec2 depthmap_size(1024,1024);
+    glm::ivec2 depthmap_size(2048,2048);
     int delta = 5;
     
     sf::ContextSettings settings;
@@ -139,6 +129,7 @@ int main(int argc, char* argv[])
     program.set_uniform("normalMatrix", normal);
     std::cout << program.attributes() << std::endl;
     std::cout << program.uniforms() << std::endl;
+    program.unbind();
 
     std::cout << "Depth Program: " << std::endl;
     program_depth.set_attribute(0, "in_Position");
@@ -148,6 +139,7 @@ int main(int argc, char* argv[])
     program_depth.set_uniform("modelviewMatrix", model);
     std::cout << program_depth.attributes() << std::endl;
     std::cout << program_depth.uniforms() << std::endl;
+    program_depth.unbind();
 
     std::cout << "Quad Program: " << std::endl;
     program_quad.set_attribute(0, "in_Position");
@@ -155,6 +147,7 @@ int main(int argc, char* argv[])
     program_quad.bind();
     std::cout << program_quad.attributes() << std::endl;
     std::cout << program_quad.uniforms() << std::endl;
+    program_quad.unbind();
 
     std::cout << "Shadow Program: " << std::endl;
     program_shadow.set_attribute(0, "in_Position");
@@ -163,6 +156,7 @@ int main(int argc, char* argv[])
     program_shadow.bind();
     std::cout << program_shadow.attributes() << std::endl;
     std::cout << program_shadow.uniforms() << std::endl;
+    program_shadow.unbind();
 
     std::cout << "Point Program: " << std::endl;
     program_point.set_attribute(0, "in_Position");
@@ -172,14 +166,12 @@ int main(int argc, char* argv[])
     program_point.set_uniform("modelviewMatrix", model);
     std::cout << program_point.attributes() << std::endl;
     std::cout << program_point.uniforms() << std::endl;
+    program_point.unbind();
     
     // Set up view port
     glViewport(0,0,viewport_size.x,viewport_size.y);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-    //glEnable(GL_CULL_FACE);
-    //glEnable (GL_BLEND);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glClearColor(0.0f,0.0f,0.0f,1.0f);
     glPointSize(10.0f);
 
@@ -437,6 +429,7 @@ int main(int argc, char* argv[])
         program_point.set_uniform("projectionMatrix", projection);
         program_point.set_uniform("modelviewMatrix", model);
         glDrawArrays(GL_POINTS,0,1);
+        program_point.unbind();
 
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, depth_tex[1]);
@@ -451,29 +444,6 @@ int main(int argc, char* argv[])
         }
         glDrawArrays(GL_TRIANGLES, 0, quad.size() * 3);
         program_quad.unbind();
-
-
-        // glBindVertexArray(vao[1]);
-        // program_point.bind();
-        // program_point.set_uniform("projectionMatrix", projection);
-        // program_point.set_uniform("modelviewMatrix", model);
-        // glDrawArrays(GL_POINTS,0,1);
-        // program_point.unbind();
-
-        // glBindVertexArray(vao[0]);
-        // program.bind();
-        // program.set_uniform("projectionMatrix", projection);
-        // program.set_uniform("modelviewMatrix", model);
-        // program.set_uniform("normalMatrix", normal);
-        // program.set_uniform("lightpos",light_pos);
-        // glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3, GL_UNSIGNED_INT,
-        //                nullptr);
-        // program_point.unbind();
-        // glBindVertexArray(vao[1]);
-        // program_point.bind();
-        // program_point.set_uniform("projectionMatrix", projection);
-        // program_point.set_uniform("modelviewMatrix", model);
-        // glDrawArrays(GL_POINTS,0,1);
         window.display();
     }
     return 0;

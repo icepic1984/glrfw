@@ -54,5 +54,7 @@ void main(void) {
     out_color = vec4(ambient * ka + diffuse*nDotL*kd + specular * spec * ks,1);
 
 
+
+
 }
 

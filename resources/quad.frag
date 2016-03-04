@@ -7,6 +7,7 @@ uniform sampler2D tex;
 
 void main()
 {
+    // scale depth map 
     float z = texture(tex,TexCoords);
     float near = 0.1f;
     float far = 100.0f;

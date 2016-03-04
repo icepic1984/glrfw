@@ -2,7 +2,7 @@
 
 void main() 
 {
-    //gl_FragDepth = gl_FragCoord.z;
+    // empty fragment shader only write depth values
 }
 
 
