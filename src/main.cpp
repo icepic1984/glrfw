@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
     glViewport(0,0,viewport_size.x,viewport_size.y);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-	glClearColor(0.0f,0.0f,0.0f,1.0f);
+	glClearColor(1.0f,1.0f,1.0f,1.0f);
     glPointSize(10.0f);
 
     // Create framebuffer object
@@ -187,8 +187,8 @@ int main(int argc, char* argv[])
     glBindTexture(GL_TEXTURE_2D, depth_tex[0]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, depthmap_size.x,
                  depthmap_size.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border);
@@ -207,8 +207,8 @@ int main(int argc, char* argv[])
     glBindTexture(GL_TEXTURE_2D, depth_tex[1]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, depthmap_size.x,
                  depthmap_size.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
@@ -350,7 +350,7 @@ int main(int argc, char* argv[])
         }
 
         if ( move_light) {
-            rotation_angle += 10;
+            rotation_angle += 5;
             if (rotation_angle > 360)
                 rotation_angle = 0.0;
             light_pos.x = 100.0f * static_cast<float>(
