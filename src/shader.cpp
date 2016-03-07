@@ -269,9 +269,8 @@ GLuint program::uniform_location(const std::string& name)
         return iter->second;
     } else {
         GLint loc = glGetUniformLocation(handle_.get(), name.c_str());
-        THROW_IF(loc < 0, error_type::uniform_not_found);
-        uniform_loc_.insert(std::make_pair(name, loc));
-        
+        if (loc >= 0)
+	        uniform_loc_.insert(std::make_pair(name, loc));
         return loc;
     }
 }
@@ -372,46 +371,67 @@ std::string program::attributes()
     return ss.str();
 }
 
-void program::set_uniform(const std::string& name, const glm::mat4& matrix)
+bool program::set_uniform(const std::string& name, const glm::mat4& matrix)
 {
     GLint loc = uniform_location(name);
+    if (loc < 0) 
+	    return false;
     glUniformMatrix4fv(loc, 1, GL_FALSE, &matrix[0][0]);
+    return true;
 }
 
-void program::set_uniform(const std::string& name, const glm::mat3& matrix)
+bool program::set_uniform(const std::string& name, const glm::mat3& matrix)
 {
     GLint loc = uniform_location(name);
+    if (loc  < 0)
+	    return false;
     glUniformMatrix3fv(loc, 1, GL_FALSE, &matrix[0][0]);
+    return true;
 }
 
-void program::set_uniform(const std::string& name, const glm::vec3& vec)
+bool program::set_uniform(const std::string& name, const glm::vec3& vec)
 {
     GLint loc = uniform_location(name);
+    if (loc < 0)
+	    return false;
     glUniform3fv(loc, 1, &vec[0]);
+    return true;
 }
 
-void program::set_uniform(const std::string& name, const glm::vec4& vec)
+bool program::set_uniform(const std::string& name, const glm::vec4& vec)
 {
     GLint loc = uniform_location(name);
+    if (loc < 0)
+	    return false;
     glUniform4fv(loc, 1, &vec[0]);
-}
+    return true;}
 
-void program::set_uniform(const std::string& name, int value)
+
+bool program::set_uniform(const std::string& name, int value)
 {
     GLint loc = uniform_location(name);
+    if (loc < 0)
+	    return false;
     glUniform1i(loc, value);
+    return true;
 }
 
-void program::set_uniform(const std::string& name, float value)
+bool program::set_uniform(const std::string& name, float value)
 {
     GLint loc = uniform_location(name);
+    if (loc < 0)
+	    return false;
     glUniform1f(loc, value);
+    return true;
 }
 
-void program::set_uniform(const std::string& name, bool value)
+bool program::set_uniform(const std::string& name, bool value)
 {
     GLint loc = uniform_location(name);
+    if (loc < 0)
+	    return false;
     glUniform1i(loc, value ? 1 : 0);
+    return true;
 }
 
 } // end of glrfw namespace

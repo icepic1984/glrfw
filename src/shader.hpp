@@ -105,19 +105,19 @@ public:
 
     std::string uniforms();
 
-    void set_uniform(const std::string& name, const glm::mat4& matrix);
+    bool set_uniform(const std::string& name, const glm::mat4& matrix);
 
-    void set_uniform(const std::string& name, const glm::mat3& matrix);
+    bool set_uniform(const std::string& name, const glm::mat3& matrix);
 
-    void set_uniform(const std::string& name, const glm::vec3& vec);
+    bool set_uniform(const std::string& name, const glm::vec3& vec);
 
-    void set_uniform(const std::string& name, const glm::vec4& vec);
+    bool set_uniform(const std::string& name, const glm::vec4& vec);
 
-    void set_uniform(const std::string& name, int value);
+    bool set_uniform(const std::string& name, int value);
 
-    void set_uniform(const std::string& name, float value);
+    bool set_uniform(const std::string& name, float value);
 
-    void set_uniform(const std::string& name, bool value);
+    bool set_uniform(const std::string& name, bool value);
 
 private:
     typedef std::unique_ptr<detail::gl_handle,

@@ -435,13 +435,7 @@ int main(int argc, char* argv[])
         glBindTexture(GL_TEXTURE_2D, depth_tex[1]);
         glBindVertexArray(vao[2]);
         program_quad.bind();
-        loc = glGetUniformLocation(program_quad.get(), "tex");
-        if (loc >= 0){
-            glUniform1i(loc, 1);
-        } else {
-            std::cout << "df" << std::endl;
-            return false;
-        }
+        program_quad.set_uniform("tex", 1);
         glDrawArrays(GL_TRIANGLES, 0, quad.size() * 3);
         program_quad.unbind();
         window.display();
