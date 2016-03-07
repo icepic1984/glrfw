@@ -8,10 +8,21 @@ in vec4 shadow_coord;
 out vec4 out_color;
 
 uniform sampler2DShadow ShadowMap;
-uniform vec4 colorAmbient = vec4(1.0f,1.0f,1.0f,0.1f);
+uniform vec4 colorAmbient = vec4(0.5f,0.5f,0.5f,0.2f);
 uniform vec4 colorDiffuse = vec4(0.7f,0.7f,0.7f,0.7f);
 uniform vec4 colorSpecular = vec4(1.0f,1.0f,1.0f,0.5f);
 uniform float shininess = 100.0f;
+
+
+vec3 CalcDirLight(vec3 light , vec3 normal)
+{
+    vec3 lightDir = normalize(-light);
+    float diff = max(dot(normal, lightDir), 0.0);
+    vec3 ambient = vec3(0.1, 0.1, 0.1);
+    
+    vec3 diffuse  = vec3(0.3,0.3,0.3)  * diff ;
+    return (ambient + diffuse);
+}  
 
 
 
@@ -52,8 +63,33 @@ void main(void) {
     else 
         spec = pow(nDotR,shininess);
 
-    float shadow = textureProj(ShadowMap,shadow_coord);
+    //float shadow = textureProj(ShadowMap, shadow_coord);
 
-     out_color = vec4(ambient * ka + shadow * diffuse * nDotL * kd +
-                      specular * spec * ks * shadow, 1);
+    float sum = 0;
+    sum += textureProjOffset(ShadowMap, shadow_coord, ivec2(-1,-1));
+    sum += textureProjOffset(ShadowMap, shadow_coord, ivec2(-1, 1));
+    sum += textureProjOffset(ShadowMap, shadow_coord, ivec2(1, 1));
+    sum += textureProjOffset(ShadowMap, shadow_coord, ivec2(1, -11));
+    sum += textureProjOffset(ShadowMap, shadow_coord, ivec2(1, 0));
+    sum += textureProjOffset(ShadowMap, shadow_coord, ivec2(0, 1));
+    sum += textureProjOffset(ShadowMap, shadow_coord, ivec2(-1, 0));
+    sum += textureProjOffset(ShadowMap, shadow_coord, ivec2(0, -1));
+    float shadow = sum / 8.0f;
+    
+
+    vec3 d = CalcDirLight(vec3(4,10,-10),normal);
+    out_color = vec4(ambient * ka, 1.0f) + vec4(specular * spec * ks,1.0f)*shadow +
+        vec4(d, 1.0f) + vec4(shadow * diffuse * nDotL,1.0f);
+
+
+    // if (shadow < 1) {
+    //     out_color = vec4(vec3(0.5f, 0.0f, 0.0f),1.0f) +
+    //                 vec4(specular * spec * ks, 1.0f) + vec4(d, 1.0f) * 0.7;
+    // } else {
+    //     out_color = vec4(ambient * ka, 1.0f) + vec4(specular * spec * ks,1.0f) +
+    //                 vec4(d, 1.0f);
+    // }
+    // out_color = vec4(ambient * ka + shadow * diffuse * nDotL * kd +
+    //                  specular * spec * ks * shadow,
+    //                  1) + vec4(d,1.0f);
 }
