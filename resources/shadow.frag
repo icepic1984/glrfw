@@ -8,7 +8,7 @@ in vec4 shadow_coord;
 out vec4 out_color;
 
 uniform sampler2DShadow ShadowMap;
-uniform vec4 colorAmbient = vec4(0.5f,0.5f,0.5f,0.2f);
+uniform vec4 colorAmbient = vec4(0.5f,0.5f,0.5f,0.4f);
 uniform vec4 colorDiffuse = vec4(0.7f,0.7f,0.7f,0.7f);
 uniform vec4 colorSpecular = vec4(1.0f,1.0f,1.0f,0.5f);
 uniform float shininess = 100.0f;
@@ -21,7 +21,7 @@ vec3 CalcDirLight(vec3 light , vec3 normal)
     vec3 ambient = vec3(0.1, 0.1, 0.1);
     
     vec3 diffuse  = vec3(0.3,0.3,0.3)  * diff ;
-    return (ambient + diffuse);
+    return (diffuse);
 }  
 
 
@@ -77,10 +77,15 @@ void main(void) {
     float shadow = sum / 8.0f;
     
 
-    vec3 d = CalcDirLight(vec3(4,10,-10),normal);
-    out_color = vec4(ambient * ka, 1.0f) + vec4(specular * spec * ks,1.0f)*shadow +
-        vec4(d, 1.0f) + vec4(shadow * diffuse * nDotL,1.0f);
+    vec3 d1 = CalcDirLight(vec3(0,0,100),normal);
+    vec3 d2 = CalcDirLight(vec3(0,100,0),normal);
+    vec3 d3 = CalcDirLight(vec3(-100,0,0),normal);
+    vec3 d4 = CalcDirLight(vec3(100,0,0),normal);
 
+    out_color = vec4(ambient * ka, 1.0f) +
+                vec4(specular * spec * ks, 1.0f) * shadow +
+                vec4(shadow * diffuse * nDotL, 1.0f) + vec4(d1, 1.0f) +
+                vec4(d2, 1.0f) + vec4(d3, 1.0f) + vec4(d4, 1.0f);
 
     // if (shadow < 1) {
     //     out_color = vec4(vec3(0.5f, 0.0f, 0.0f),1.0f) +

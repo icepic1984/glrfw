@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
     glViewport(0,0,viewport_size.x,viewport_size.y);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-	glClearColor(1.0f,1.0f,1.0f,1.0f);
+	glClearColor(0.0f,0.0f,0.0f,1.0f);
     glPointSize(10.0f);
 
     // Create framebuffer object
@@ -269,7 +269,7 @@ int main(int argc, char* argv[])
 
     glm::vec2 start_pos;
     glm::vec2 cur_pos;
-    glm::vec3 light_pos(0,0,0);
+    glm::vec3 light_pos(0,0,20);
     float rotation_angle = 0.0f;
     bool move_light = false;
 
@@ -328,7 +328,6 @@ int main(int argc, char* argv[])
                 }
             } else if (event.type == sf::Event::KeyPressed) {
                 if (event.key.code == sf::Keyboard::P) {
-                    // capture 
                 }
             }
         }
@@ -414,13 +413,8 @@ int main(int argc, char* argv[])
         program_shadow.set_uniform("normalMatrix", normal);
         program_shadow.set_uniform("lightpos",light_pos);
         program_shadow.set_uniform("shadowMatrix",shadow_matrix);
-        int loc = glGetUniformLocation(program_shadow.get(), "ShadowMap");
-        if (loc >= 0){
-            glUniform1i(loc, 0);
-        } else {
-            std::cout << "sha" << std::endl;
-            return false;
-        }
+        program_shadow.set_uniform("ShadowMap", 0);
+        
         glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3, GL_UNSIGNED_INT,
                         nullptr);
         program_shadow.unbind();
