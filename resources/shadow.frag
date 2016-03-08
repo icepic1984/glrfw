@@ -12,6 +12,7 @@ uniform vec4 colorAmbient = vec4(0.5f,0.5f,0.5f,0.4f);
 uniform vec4 colorDiffuse = vec4(0.7f,0.7f,0.7f,0.7f);
 uniform vec4 colorSpecular = vec4(1.0f,1.0f,1.0f,0.5f);
 uniform float shininess = 100.0f;
+uniform int red_shadow;
 
 
 vec3 CalcDirLight(vec3 light , vec3 normal)
@@ -82,10 +83,28 @@ void main(void) {
     vec3 d3 = CalcDirLight(vec3(-100,0,0),normal);
     vec3 d4 = CalcDirLight(vec3(100,0,0),normal);
 
-    out_color = vec4(ambient * ka, 1.0f) +
-                vec4(specular * spec * ks, 1.0f) * shadow +
-                vec4(shadow * diffuse * nDotL, 1.0f) + vec4(d1, 1.0f) +
-                vec4(d2, 1.0f) + vec4(d3, 1.0f) + vec4(d4, 1.0f);
+    if ( red_shadow == 0) {
+        
+        out_color = vec4(ambient * ka, 1.0f) +
+            vec4(specular * spec * ks, 1.0f) * shadow +
+            vec4(shadow * diffuse * nDotL, 1.0f) + vec4(d1, 1.0f) +
+            vec4(d2, 1.0f) + vec4(d3, 1.0f) + vec4(d4, 1.0f);
+    } else {
+        // out_color = vec4((vec3(1.0f, 0.0f, 0.0f) + vec3(specular * spec * ks)) *
+        //                 (1.0f - shadow) +
+        //                  (vec3(specular * spec * ks) * (shadow) + ,1.0f);
+
+            if (shadow < 1) {
+                out_color = vec4(vec3(0.5f, 0.0f, 0.0f)*shadow, 1.0f) +
+                            vec4(specular * spec * ks, 1.0f)*shadow + vec4(d1, 1.0f) +
+                            vec4(d2, 1.0f) + vec4(d3, 1.0f) + vec4(d4, 1.0f);
+            } else {
+                out_color = vec4(ambient * ka, 1.0f) +
+                            vec4(specular * spec * ks, 1.0f) + vec4(d1, 1.0f) +
+                            vec4(d2, 1.0f) + vec4(d3, 1.0f) + vec4(d4, 1.0f);
+            }
+    }
+    
 
     // if (shadow < 1) {
     //     out_color = vec4(vec3(0.5f, 0.0f, 0.0f),1.0f) +

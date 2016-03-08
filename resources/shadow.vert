@@ -28,16 +28,18 @@ void main(void) {
 	//Transform vertex to eye-space
     vec4 position = modelviewMatrix * in_Position;
     
-    vec4 ml = modelviewMatrix * vec4(lightpos,1.0f);
+    //vec4 ml = modelviewMatrix * vec4(lightpos,1.0f);
 
+    
 	//Pass position to fragment-shader
 	//Interpolate thought the polygon
     epos = position.xyz;
 
     //Calculate vector from surface to light
 	//and pass it to fragment-shader
-    //lightdir = normalize(lightpos - position.xyz);
-    lightdir = normalize(ml.xyz - position.xyz);
+    //lightdir = normalize(lightpos2 - position.xyz);
+    
+    lightdir = normalize(lightpos - position.xyz);
 
     shadow_coord = shadowMatrix * in_Position;
 

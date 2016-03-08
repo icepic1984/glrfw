@@ -20,7 +20,7 @@ std::vector<glm::vec3> quad
     {-0.5f,-0.5f,0.0f}
 };
 
-glm::vec3 getArcBall(const glm::vec2 pos, int width, int height)
+glm::vec3 getArcBall(const glm::vec2& pos, int width, int height)
 {
     glm::vec3 p =
         glm::vec3((2.0f * pos.x) / static_cast<float>(width) - 1.0f,
@@ -34,6 +34,21 @@ glm::vec3 getArcBall(const glm::vec2 pos, int width, int height)
     }
     return p;
 }
+
+void update(glm::mat4& model, glm::mat3& normal, const glm::vec2& start_pos,
+            const glm::vec2& cur_pos, int width, int height)
+{
+    glm::vec3 va = getArcBall(start_pos, width, height);
+    glm::vec3 vb = getArcBall(cur_pos, width, height);
+    float angle =
+        static_cast<float>(std::acos(std::min(1.0f, glm::dot(va, vb))));
+    glm::vec3 axis = glm::cross(va, vb);
+    glm::mat3 eye = glm::inverse(glm::mat3(model));
+    glm::vec3 obj_axis = eye * axis;
+    model = glm::rotate(model, 0.1f * glm::degrees(angle), obj_axis);
+    normal = glm::transpose(glm::inverse(glm::mat3(model)));
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -113,10 +128,12 @@ int main(int argc, char* argv[])
         glm::perspective(45.0f, static_cast<float>(viewport_size.x) /
                                     static_cast<float>(viewport_size.y),
                          0.1f, 1000.0f);
-    auto model =
+    auto view =
         glm::lookAt(glm::vec3(0.0f, 0.0f, delta), glm::vec3(0.0f, 0.0f, 0.0f),
                     glm::vec3(0.0f, 1.0f, 0.0f));
-    auto normal = glm::transpose(glm::inverse(glm::mat3(model)));
+    auto model = glm::mat4(1.0f);
+    
+    auto normal = glm::transpose(glm::inverse(glm::mat3(view*model)));
 
 
     std::cout << "Program: " << std::endl;
@@ -125,7 +142,7 @@ int main(int argc, char* argv[])
     program.link();
     program.bind();
     program.set_uniform("projectionMatrix", projection);
-    program.set_uniform("modelviewMatrix", model);
+    program.set_uniform("modelviewMatrix", view * model);
     program.set_uniform("normalMatrix", normal);
     std::cout << program.attributes() << std::endl;
     std::cout << program.uniforms() << std::endl;
@@ -136,7 +153,7 @@ int main(int argc, char* argv[])
     program_depth.link();
     program_depth.bind();
     program_depth.set_uniform("projectionMatrix", projection);
-    program_depth.set_uniform("modelviewMatrix", model);
+    program_depth.set_uniform("modelviewMatrix", view * model);
     std::cout << program_depth.attributes() << std::endl;
     std::cout << program_depth.uniforms() << std::endl;
     program_depth.unbind();
@@ -269,9 +286,11 @@ int main(int argc, char* argv[])
 
     glm::vec2 start_pos;
     glm::vec2 cur_pos;
-    glm::vec3 light_pos(0,0,20);
+    glm::vec3 light_pos(0,100,0);
     float rotation_angle = 0.0f;
     bool move_light = false;
+    
+    bool red_shadow = false;
 
     glm::mat4 biasMatrix(0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5,
                          0.0, 0.5, 0.5, 0.5, 1.0);
@@ -283,10 +302,13 @@ int main(int argc, char* argv[])
     auto depth_view =
         glm::lookAt(light_pos, glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
     
-    auto shadow_matrix = biasMatrix * depth_projection * depth_view;
+    auto depth_normal = glm::transpose(glm::inverse(glm::mat3(depth_view*model)));
+
+    auto shadow_matrix = biasMatrix * depth_projection * depth_view * model;
 
     glBindBuffer(GL_ARRAY_BUFFER, vbos[3]);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3), &light_pos);
+
 
     while (running) {
         sf::Event event;
@@ -306,7 +328,9 @@ int main(int argc, char* argv[])
                 glm::mat3 eye = glm::inverse(glm::mat3(model));
                 glm::vec3 tran = eye * glm::vec3(0.0f,0.0f,delta);
                 model = glm::translate(model,tran);
-                normal = glm::transpose(glm::inverse(glm::mat3(model)));
+                normal = glm::transpose(glm::inverse(glm::mat3(view * model)));
+                depth_normal = glm::transpose(glm::inverse(glm::mat3(depth_view*model)));
+                shadow_matrix = biasMatrix * depth_projection * depth_view * model;
                 delta = 0;
             } else if (event.type == sf::Event::MouseButtonPressed) {
                 if (event.mouseButton.button == sf::Mouse::Left) {
@@ -328,49 +352,42 @@ int main(int argc, char* argv[])
                 }
             } else if (event.type == sf::Event::KeyPressed) {
                 if (event.key.code == sf::Keyboard::P) {
+                    program_shadow.bind();
+                    program_shadow.set_uniform("red_shadow",red_shadow ? 1 : 0);
+                    program_shadow.unbind();
+                    red_shadow = !red_shadow;
+
                 }
             }
         }
 
         if (mouse_pressed) {
             if( cur_pos != start_pos) {
-                glm::vec3 va =
-                    getArcBall(start_pos, viewport_size.x, viewport_size.y);
-                glm::vec3 vb = getArcBall(cur_pos, viewport_size.x, viewport_size.y);
-                float angle = static_cast<float>(
-                    std::acos(std::min(1.0f, glm::dot(va, vb))));
-                glm::vec3 axis = glm::cross(va, vb);
-                glm::mat3 eye = glm::inverse(glm::mat3(model));
-                glm::vec3 obj_axis = eye * axis;
-                model = glm::rotate(model, 0.1f * glm::degrees(angle), obj_axis);
-                normal = glm::transpose(glm::inverse(glm::mat3(model)));
+                update(model, normal, start_pos, cur_pos, viewport_size.x,
+                       viewport_size.y);
+                shadow_matrix = biasMatrix * depth_projection * depth_view * model;
                 start_pos = cur_pos;
             }
         }
 
+
         if ( move_light) {
-            rotation_angle += 5;
+            rotation_angle += 1;
             if (rotation_angle > 360)
                 rotation_angle = 0.0;
             light_pos.x = 100.0f * static_cast<float>(
                                        std::cos(glm::radians(rotation_angle)));
             light_pos.y = 100.0f * static_cast<float>(
                                        std::sin(glm::radians(rotation_angle)));
+            depth_view =
+                glm::lookAt(light_pos, glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
+            shadow_matrix = biasMatrix * depth_projection * depth_view * model;
 
             glBindVertexArray(vao[1]);
             glBindBuffer(GL_ARRAY_BUFFER,vbos[3]);
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3),&light_pos);
 
         }
-
-        depth_projection =
-        glm::perspective(45.0f, static_cast<float>(depthmap_size.x) /
-                                    static_cast<float>(depthmap_size.y),
-                         0.1f, 1000.0f);
-        depth_view =
-            glm::lookAt(light_pos, glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
-
-        shadow_matrix = biasMatrix * depth_projection * depth_view;
 
         glBindFramebuffer(GL_FRAMEBUFFER, fbo[0]);
         glViewport(0,0,depthmap_size.x,depthmap_size.y);
@@ -380,7 +397,7 @@ int main(int argc, char* argv[])
         glBindVertexArray(vao[0]);
         program_depth.bind();
         program_depth.set_uniform("projectionMatrix", depth_projection);
-        program_depth.set_uniform("modelviewMatrix", depth_view);
+        program_depth.set_uniform("modelviewMatrix", depth_view * model);
         glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3,
                         GL_UNSIGNED_INT, nullptr);
         program_depth.unbind();
@@ -393,7 +410,7 @@ int main(int argc, char* argv[])
         glBindVertexArray(vao[0]);
         program_depth.bind();
         program_depth.set_uniform("projectionMatrix", depth_projection);
-        program_depth.set_uniform("modelviewMatrix", depth_view);
+        program_depth.set_uniform("modelviewMatrix", depth_view*model);
         glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3,
                         GL_UNSIGNED_INT, nullptr);
         program_depth.unbind();
@@ -409,19 +426,20 @@ int main(int argc, char* argv[])
         glBindVertexArray(vao[0]);
         program_shadow.bind();
         program_shadow.set_uniform("projectionMatrix", projection);
-        program_shadow.set_uniform("modelviewMatrix", model);
+        program_shadow.set_uniform("modelviewMatrix", view * model);
         program_shadow.set_uniform("normalMatrix", normal);
         program_shadow.set_uniform("lightpos",light_pos);
         program_shadow.set_uniform("shadowMatrix",shadow_matrix);
         program_shadow.set_uniform("ShadowMap", 0);
-        
+        std::cout << "lighpos: " << glm::to_string(light_pos) << std::endl;
+
         glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3, GL_UNSIGNED_INT,
                         nullptr);
         program_shadow.unbind();
         glBindVertexArray(vao[1]);
         program_point.bind();
         program_point.set_uniform("projectionMatrix", projection);
-        program_point.set_uniform("modelviewMatrix", model);
+        program_point.set_uniform("modelviewMatrix",  view );
         glDrawArrays(GL_POINTS,0,1);
         program_point.unbind();
 
