@@ -20,9 +20,7 @@ NamespaceIndentation: None
 AccessModifierOffset: -4
 
 # Brace behaviour
-BreakBeforeBraces: Stroustrup
-#BreakBeforeBraces: WebKit
-#BreakBeforeBraces: WebKit
+BreakBeforeBraces: WebKit
 
 SpaceBeforeParens: ControlStatements
 SpacesInParentheses: false

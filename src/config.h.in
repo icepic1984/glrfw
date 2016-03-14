@@ -1,6 +1,13 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define RESOURCE_PATH "${RESOURCE_PATH}"
+#include <string>
+
+namespace glrfw  
+{
+    
+const std::string resource_path =  "${RESOURCE_PATH}";
+
+}
 
 #endif 
