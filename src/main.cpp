@@ -46,7 +46,6 @@ void update(glm::mat4& model, glm::mat3& normal, const glm::vec2& start_pos,
     glm::mat3 eye = glm::inverse(glm::mat3(model));
     glm::vec3 obj_axis = eye * axis;
     model = glm::rotate(model, 0.1f * glm::degrees(angle), obj_axis);
-    normal = glm::transpose(glm::inverse(glm::mat3(model)));
 }
 
 
@@ -324,14 +323,18 @@ int main(int argc, char* argv[])
                                static_cast<float>(viewport_size.y),
                     0.1f, 1000.0f);
             } else if (event.type == sf::Event::MouseWheelMoved) {
-                delta += event.mouseWheel.delta;
-                glm::mat3 eye = glm::inverse(glm::mat3(model));
-                glm::vec3 tran = eye * glm::vec3(0.0f,0.0f,delta);
-                model = glm::translate(model,tran);
+                delta += event.mouseWheel.delta*5;
+                view = glm::lookAt(glm::vec3(0.0f, 0.0f, delta),
+                                        glm::vec3(0.0f, 0.0f, 0.0f),
+                                        glm::vec3(0.0f, 1.0f, 0.0f));
+
+                // glm::mat3 eye = glm::inverse(glm::mat3(model));
+                // glm::vec3 tran = eye * glm::vec3(0.0f,0.0f,delta);
+                // model = glm::translate(model,tran);
                 normal = glm::transpose(glm::inverse(glm::mat3(view * model)));
-                depth_normal = glm::transpose(glm::inverse(glm::mat3(depth_view*model)));
-                shadow_matrix = biasMatrix * depth_projection * depth_view * model;
-                delta = 0;
+                // depth_normal = glm::transpose(glm::inverse(glm::mat3(depth_view*model)));
+                // shadow_matrix = biasMatrix * depth_projection * depth_view * model;
+                // delta = 0;
             } else if (event.type == sf::Event::MouseButtonPressed) {
                 if (event.mouseButton.button == sf::Mouse::Left) {
                     mouse_pressed = true;
@@ -365,6 +368,7 @@ int main(int argc, char* argv[])
             if( cur_pos != start_pos) {
                 update(model, normal, start_pos, cur_pos, viewport_size.x,
                        viewport_size.y);
+                normal = glm::transpose(glm::inverse(glm::mat3(view * model)));
                 shadow_matrix = biasMatrix * depth_projection * depth_view * model;
                 start_pos = cur_pos;
             }
@@ -381,6 +385,7 @@ int main(int argc, char* argv[])
                                        std::sin(glm::radians(rotation_angle)));
             depth_view =
                 glm::lookAt(light_pos, glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
+            depth_normal = glm::transpose(glm::inverse(glm::mat3(depth_view*model)));
             shadow_matrix = biasMatrix * depth_projection * depth_view * model;
 
             glBindVertexArray(vao[1]);
@@ -388,6 +393,8 @@ int main(int argc, char* argv[])
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3),&light_pos);
 
         }
+        normal = glm::transpose(glm::inverse(glm::mat3(view * model)));
+        shadow_matrix = biasMatrix * depth_projection * depth_view * model;
 
         glBindFramebuffer(GL_FRAMEBUFFER, fbo[0]);
         glViewport(0,0,depthmap_size.x,depthmap_size.y);
@@ -401,12 +408,12 @@ int main(int argc, char* argv[])
         glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3,
                         GL_UNSIGNED_INT, nullptr);
         program_depth.unbind();
+        glDisable(GL_CULL_FACE);
+
 
         glBindFramebuffer(GL_FRAMEBUFFER, fbo[1]);
         glViewport(0,0,depthmap_size.x,depthmap_size.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
         glBindVertexArray(vao[0]);
         program_depth.bind();
         program_depth.set_uniform("projectionMatrix", depth_projection);
@@ -418,7 +425,6 @@ int main(int argc, char* argv[])
 
         glViewport(0, 0, viewport_size.x, viewport_size.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glDisable(GL_CULL_FACE);
 
         //Render depth map to screen
         glActiveTexture(GL_TEXTURE0);
@@ -431,7 +437,7 @@ int main(int argc, char* argv[])
         program_shadow.set_uniform("lightpos",light_pos);
         program_shadow.set_uniform("shadowMatrix",shadow_matrix);
         program_shadow.set_uniform("ShadowMap", 0);
-        std::cout << "lighpos: " << glm::to_string(light_pos) << std::endl;
+        //.std::cout << "lighpos: " << glm::to_string(light_pos) << std::endl;
 
         glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3, GL_UNSIGNED_INT,
                         nullptr);
