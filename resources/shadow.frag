@@ -70,12 +70,8 @@ void main(void) {
     sum += textureProjOffset(ShadowMap, shadow_coord, ivec2(-1,-1));
     sum += textureProjOffset(ShadowMap, shadow_coord, ivec2(-1, 1));
     sum += textureProjOffset(ShadowMap, shadow_coord, ivec2(1, 1));
-    sum += textureProjOffset(ShadowMap, shadow_coord, ivec2(1, -11));
-    sum += textureProjOffset(ShadowMap, shadow_coord, ivec2(1, 0));
-    sum += textureProjOffset(ShadowMap, shadow_coord, ivec2(0, 1));
-    sum += textureProjOffset(ShadowMap, shadow_coord, ivec2(-1, 0));
-    sum += textureProjOffset(ShadowMap, shadow_coord, ivec2(0, -1));
-    float shadow = sum / 8.0f;
+    sum += textureProjOffset(ShadowMap, shadow_coord, ivec2(1, -1));
+    float shadow = sum * 0.25;
     
 
     vec3 d1 = CalcDirLight(vec3(0,0,100),normal);
@@ -85,18 +81,15 @@ void main(void) {
 
     if ( red_shadow == 0) {
         
-        out_color = vec4(ambient * ka, 1.0f) +
-            vec4(specular * spec * ks, 1.0f) * shadow +
-            vec4(shadow * diffuse * nDotL, 1.0f) + vec4(d1, 1.0f) +
-            vec4(d2, 1.0f) + vec4(d3, 1.0f) + vec4(d4, 1.0f);
+        out_color = vec4(ambient * ka, 0.16f) +
+            vec4(specular * spec * ks, 0.16f) * shadow +
+            vec4(shadow * diffuse * nDotL, 0.16f) + vec4(d1, 0.16f) +
+            vec4(d2, 0.16f) + vec4(d3, 0.16f) + vec4(d4, 0.16f);
     } else {
-        // out_color = vec4((vec3(1.0f, 0.0f, 0.0f) + vec3(specular * spec * ks)) *
-        //                 (1.0f - shadow) +
-        //                  (vec3(specular * spec * ks) * (shadow) + ,1.0f);
 
             if (shadow < 1) {
-                out_color = vec4(vec3(0.5f, 0.0f, 0.0f)*shadow, 1.0f) +
-                            vec4(specular * spec * ks, 1.0f)*shadow + vec4(d1, 1.0f) +
+                out_color = vec4(vec3(0.5f, 0.0f, 0.0f), 0.2f) +
+                            vec4(specular * spec * ks, 1.0f) + vec4(d1, 1.0f) +
                             vec4(d2, 1.0f) + vec4(d3, 1.0f) + vec4(d4, 1.0f);
             } else {
                 out_color = vec4(ambient * ka, 1.0f) +

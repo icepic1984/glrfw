@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
     // Setup windows and create context
     glm::ivec2 viewport_size(800,600);
     glm::ivec2 depthmap_size(2048,2048);
-    int delta = 5;
+    int delta = 50;
     
     sf::ContextSettings settings;
     settings.depthBits = 24;
@@ -285,7 +285,7 @@ int main(int argc, char* argv[])
 
     glm::vec2 start_pos;
     glm::vec2 cur_pos;
-    glm::vec3 light_pos(0,100,0);
+    glm::vec3 light_pos(0,0,0);
     float rotation_angle = 0.0f;
     bool move_light = false;
     
@@ -299,7 +299,7 @@ int main(int argc, char* argv[])
                                     static_cast<float>(depthmap_size.y),
                          0.1f, 1000.0f);
     auto depth_view =
-        glm::lookAt(light_pos, glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
+        glm::lookAt(light_pos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
     
     auto depth_normal = glm::transpose(glm::inverse(glm::mat3(depth_view*model)));
 
@@ -328,13 +328,7 @@ int main(int argc, char* argv[])
                                         glm::vec3(0.0f, 0.0f, 0.0f),
                                         glm::vec3(0.0f, 1.0f, 0.0f));
 
-                // glm::mat3 eye = glm::inverse(glm::mat3(model));
-                // glm::vec3 tran = eye * glm::vec3(0.0f,0.0f,delta);
-                // model = glm::translate(model,tran);
                 normal = glm::transpose(glm::inverse(glm::mat3(view * model)));
-                // depth_normal = glm::transpose(glm::inverse(glm::mat3(depth_view*model)));
-                // shadow_matrix = biasMatrix * depth_projection * depth_view * model;
-                // delta = 0;
             } else if (event.type == sf::Event::MouseButtonPressed) {
                 if (event.mouseButton.button == sf::Mouse::Left) {
                     mouse_pressed = true;
@@ -381,10 +375,10 @@ int main(int argc, char* argv[])
                 rotation_angle = 0.0;
             light_pos.x = 100.0f * static_cast<float>(
                                        std::cos(glm::radians(rotation_angle)));
-            light_pos.y = 100.0f * static_cast<float>(
+            light_pos.z = 100.0f * static_cast<float>(
                                        std::sin(glm::radians(rotation_angle)));
             depth_view =
-                glm::lookAt(light_pos, glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
+                glm::lookAt(light_pos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
             depth_normal = glm::transpose(glm::inverse(glm::mat3(depth_view*model)));
             shadow_matrix = biasMatrix * depth_projection * depth_view * model;
 
@@ -399,8 +393,9 @@ int main(int argc, char* argv[])
         glBindFramebuffer(GL_FRAMEBUFFER, fbo[0]);
         glViewport(0,0,depthmap_size.x,depthmap_size.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_FRONT);
+        glPolygonOffset(5.5f,100.0f);
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        
         glBindVertexArray(vao[0]);
         program_depth.bind();
         program_depth.set_uniform("projectionMatrix", depth_projection);
@@ -408,9 +403,8 @@ int main(int argc, char* argv[])
         glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3,
                         GL_UNSIGNED_INT, nullptr);
         program_depth.unbind();
-        glDisable(GL_CULL_FACE);
-
-
+        glDisable(GL_POLYGON_OFFSET_FILL);
+        
         glBindFramebuffer(GL_FRAMEBUFFER, fbo[1]);
         glViewport(0,0,depthmap_size.x,depthmap_size.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
