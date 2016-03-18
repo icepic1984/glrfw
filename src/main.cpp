@@ -128,8 +128,8 @@ int main(int argc, char* argv[])
                                     static_cast<float>(viewport_size.y),
                          0.1f, 1000.0f);
     auto view =
-        glm::lookAt(glm::vec3(0.0f, 0.0f, delta), glm::vec3(0.0f, 0.0f, 0.0f),
-                    glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::lookAt(glm::vec3(0, 176.2f, 147.85f), glm::vec3(0.0f, 0.0f, 0.0f),
+                    glm::vec3(0.0f, -1.0f, 0.0f));
     auto model = glm::mat4(1.0f);
     
     auto normal = glm::transpose(glm::inverse(glm::mat3(view*model)));
@@ -285,7 +285,8 @@ int main(int argc, char* argv[])
 
     glm::vec2 start_pos;
     glm::vec2 cur_pos;
-    glm::vec3 light_pos(0,0,0);
+    //0, 176.2f, 147.85f),
+    glm::vec3 light_pos(88.30f,176.2f,147.85f);
     float rotation_angle = 0.0f;
     bool move_light = false;
     
@@ -299,7 +300,7 @@ int main(int argc, char* argv[])
                                     static_cast<float>(depthmap_size.y),
                          0.1f, 1000.0f);
     auto depth_view =
-        glm::lookAt(light_pos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+        glm::lookAt(light_pos, glm::vec3(0, 0, 0), glm::vec3(0, -1, 0));
     
     auto depth_normal = glm::transpose(glm::inverse(glm::mat3(depth_view*model)));
 
@@ -378,7 +379,7 @@ int main(int argc, char* argv[])
             light_pos.z = 100.0f * static_cast<float>(
                                        std::sin(glm::radians(rotation_angle)));
             depth_view =
-                glm::lookAt(light_pos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+                glm::lookAt(light_pos, glm::vec3(0, 0, 0), glm::vec3(0, -1, 0));
             depth_normal = glm::transpose(glm::inverse(glm::mat3(depth_view*model)));
             shadow_matrix = biasMatrix * depth_projection * depth_view * model;
 
