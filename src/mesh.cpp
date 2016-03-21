@@ -96,6 +96,13 @@ void mesh::print_triangles()
     }
 }
 
+void mesh::print_normals()
+{
+    for (auto iter : vertex_normals) {
+        std::cout << iter << std::endl;
+    }
+}
+
 void mesh::print_neighbors()
 {
     for (int i = 0; i < static_cast<int>(vertices.size()); ++i) {
