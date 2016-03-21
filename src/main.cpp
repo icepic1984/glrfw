@@ -10,6 +10,10 @@
 #include "lodepng.h"
 #include "error.hpp"
 
+glm::vec3 light_pos(88.30f, 176.2f, 147.85f);
+
+glm::vec3 view_pos(0, 176.1f, 147.85f);
+
 std::vector<glm::vec3> quad 
 {
     {-1.0f,-1.0f,0.0f},
@@ -19,6 +23,30 @@ std::vector<glm::vec3> quad
     {-0.5f,-1.0f,0.0f},
     {-0.5f,-0.5f,0.0f}
 };
+
+std::vector<glm::vec3> ground 
+{
+    {-1.0f,0.0f,1.0f},
+    {-1.0f,0.0f,-1.0f},
+    {1.0f,0.0f,-1.0f},
+    {1.0f,0.0f,-1.0f},
+    {1.0f,0.0f,1.0f},
+    {-1.0f,0.0f,1.0f}
+};
+    
+std::vector<glm::vec3> sensor
+{
+    {88.30f, 176.2f, 147.85f},
+    {0.0f, 176.2f, 147.85f},
+    {0.0f, 176.2f, 147.85f},
+    {0.0f,0.0f,0.0f},
+    {0.0f,0.0f,0.0f},
+    {88.30f, 176.2f, 147.85f},
+    {88.30f, 176.2f, 147.85f},
+    {88.30f, 176.2f, -20.0f}
+        
+};
+
 
 glm::vec3 getArcBall(const glm::vec2& pos, int width, int height)
 {
@@ -35,15 +63,16 @@ glm::vec3 getArcBall(const glm::vec2& pos, int width, int height)
     return p;
 }
 
-void update(glm::mat4& model, glm::mat3& normal, const glm::vec2& start_pos,
-            const glm::vec2& cur_pos, int width, int height)
+void update(const glm::mat4& view, glm::mat4& model, glm::mat3& normal,
+            const glm::vec2& start_pos, const glm::vec2& cur_pos, int width,
+            int height)
 {
     glm::vec3 va = getArcBall(start_pos, width, height);
     glm::vec3 vb = getArcBall(cur_pos, width, height);
     float angle =
         static_cast<float>(std::acos(std::min(1.0f, glm::dot(va, vb))));
     glm::vec3 axis = glm::cross(va, vb);
-    glm::mat3 eye = glm::inverse(glm::mat3(model));
+    glm::mat3 eye = glm::inverse(glm::mat3(view * model));
     glm::vec3 obj_axis = eye * axis;
     model = glm::rotate(model, 0.1f * glm::degrees(angle), obj_axis);
 }
@@ -83,6 +112,16 @@ int main(int argc, char* argv[])
     glrfw::mesh mesh =
         glrfw::parse_stl(glrfw::resource_path + std::string("kiefer.stl"));
 
+    glrfw::mesh ground_mesh;
+    ground_mesh.add_triangle(glm::vec3(-100.0f,100.0f,-20.0f),
+                             glm::vec3(-100.0f,-100.0f,-20.0f),
+                             glm::vec3(100.0f,-100.0f,-20.0f));
+
+    ground_mesh.add_triangle(glm::vec3(100.0f,-100.0f,-20.0f),
+                             glm::vec3(100.0f,100.0f,-20.0f),
+                             glm::vec3(-100.0f,100.0f,-20.0f));
+    ground_mesh.calculate_normals();
+
     // load vertex and fragment shader
     glrfw::shader vertex(glrfw::shader_type::vertex,
                          glrfw::resource_path + std::string("pixel.vert"));
@@ -114,6 +153,15 @@ int main(int argc, char* argv[])
     glrfw::program program_shadow(std::move(vertex_shadow),
                                   std::move(fragment_shadow));
 
+    glrfw::shader vertex_ground(glrfw::shader_type::vertex,
+                               glrfw::resource_path + std::string("ground.vert"));
+    glrfw::shader fragment_ground(glrfw::shader_type::fragment,
+                                  glrfw::resource_path +
+                                      std::string("ground.frag"));
+    glrfw::program program_ground(std::move(vertex_ground),
+                                  std::move(fragment_ground));
+
+
     glrfw::shader vertex_quad(glrfw::shader_type::vertex,
                                glrfw::resource_path + std::string("quad.vert"));
     glrfw::shader fragment_quad(glrfw::shader_type::fragment,
@@ -122,13 +170,21 @@ int main(int argc, char* argv[])
     glrfw::program program_quad(std::move(vertex_quad),
                                  std::move(fragment_quad));
 
+    glrfw::shader vertex_lines(glrfw::shader_type::vertex,
+                               glrfw::resource_path + std::string("lines.vert"));
+    glrfw::shader fragment_lines(glrfw::shader_type::fragment,
+                                 glrfw::resource_path +
+                                     std::string("lines.frag"));
+    glrfw::program program_lines(std::move(vertex_lines),
+                                 std::move(fragment_lines));
+
     // create matrices
     auto projection =
         glm::perspective(45.0f, static_cast<float>(viewport_size.x) /
                                     static_cast<float>(viewport_size.y),
                          0.1f, 1000.0f);
     auto view =
-        glm::lookAt(glm::vec3(0, 176.2f, 147.85f), glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::lookAt(view_pos, glm::vec3(0.0f, 0.0f, 0.0f),
                     glm::vec3(0.0f, -1.0f, 0.0f));
     auto model = glm::mat4(1.0f);
     
@@ -174,6 +230,15 @@ int main(int argc, char* argv[])
     std::cout << program_shadow.uniforms() << std::endl;
     program_shadow.unbind();
 
+    std::cout << "Ground Program: " << std::endl;
+    program_ground.set_attribute(0, "in_Position");
+    program_ground.set_attribute(1, "in_Normals");
+    program_ground.link();
+    program_ground.bind();
+    std::cout << program_ground.attributes() << std::endl;
+    std::cout << program_ground.uniforms() << std::endl;
+    program_ground.unbind();
+
     std::cout << "Point Program: " << std::endl;
     program_point.set_attribute(0, "in_Position");
     program_point.link();
@@ -183,6 +248,15 @@ int main(int argc, char* argv[])
     std::cout << program_point.attributes() << std::endl;
     std::cout << program_point.uniforms() << std::endl;
     program_point.unbind();
+
+    std::cout << "Lines Program: " << std::endl;
+    program_lines.set_attribute(0, "in_Position");
+    program_lines.link();
+    program_lines.bind();
+    std::cout << program_point.attributes() << std::endl;
+    std::cout << program_point.uniforms() << std::endl;
+    program_lines.unbind();
+
     
     // Set up view port
     glViewport(0,0,viewport_size.x,viewport_size.y);
@@ -235,30 +309,52 @@ int main(int argc, char* argv[])
     glBindFramebuffer(GL_FRAMEBUFFER,0);
 
     // Generate vertex buffer ojects
-    GLuint vbos[5];
-    glGenBuffers(5,&vbos[0]);
+    GLuint vbos[9];
+    glGenBuffers(9,&vbos[0]);
     glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
     glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(glm::vec3),
                  &mesh.vertices[0], GL_STATIC_DRAW);
+
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos[1]);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                  mesh.triangles.size() * sizeof(glm::ivec3),
                  &mesh.triangles[0], GL_STATIC_DRAW);
+
     glBindBuffer(GL_ARRAY_BUFFER, vbos[2]);
     glBufferData(GL_ARRAY_BUFFER, mesh.vertex_normals.size() * sizeof(glm::vec3),
                  &mesh.vertex_normals[0], GL_STATIC_DRAW);
+
     glBindBuffer(GL_ARRAY_BUFFER,vbos[3]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3), nullptr, GL_DYNAMIC_DRAW);
+
     glBindBuffer(GL_ARRAY_BUFFER,vbos[4]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * quad.size(), &quad[0],
                  GL_STATIC_DRAW);
 
+    glBindBuffer(GL_ARRAY_BUFFER,vbos[5]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * sensor.size(), &sensor[0],
+                 GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbos[6]);
+    glBufferData(GL_ARRAY_BUFFER, ground_mesh.vertices.size() * sizeof(glm::vec3),
+                 &ground_mesh.vertices[0], GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos[7]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                 ground_mesh.triangles.size() * sizeof(glm::ivec3),
+                 &ground_mesh.triangles[0], GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbos[8]);
+    glBufferData(GL_ARRAY_BUFFER,
+                 ground_mesh.vertex_normals.size() * sizeof(glm::vec3),
+                 &ground_mesh.vertex_normals[0], GL_STATIC_DRAW);
+
     // Generate vertex array objects and bind mesh vbos to the current
     // vao
-    GLuint vao[3];
-    glGenVertexArrays(3, &vao[0]);
+    GLuint vao[5];
+    glGenVertexArrays(5, &vao[0]);
 
-    // Bind vbo for rendering mesh to vao
+    // Jaw 
     glBindVertexArray(vao[0]);
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
@@ -268,25 +364,40 @@ int main(int argc, char* argv[])
     glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,0,0); 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,vbos[1]);
     
-    // Bind vbo for rendering of point light to vao
+    // Point for light source
     glBindVertexArray(vao[1]);
     glBindBuffer(GL_ARRAY_BUFFER, vbos[3]);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,0); 
 
-    // Bind vao for rendering quad
+    // Quad for depth map
     glBindVertexArray(vao[2]);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER,vbos[4]);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    // Sensor field
+    glBindVertexArray(vao[3]);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER,vbos[5]);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    // Ground plane
+    glBindVertexArray(vao[4]);
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER,vbos[6]);
+    glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,0);
+    glBindBuffer(GL_ARRAY_BUFFER,vbos[8]);
+    glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,0,0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos[7]);
 
     bool running = true;
     bool mouse_pressed = false;
 
     glm::vec2 start_pos;
     glm::vec2 cur_pos;
-    //0, 176.2f, 147.85f),
-    glm::vec3 light_pos(88.30f,176.2f,147.85f);
+
     float rotation_angle = 0.0f;
     bool move_light = false;
     
@@ -324,10 +435,9 @@ int main(int argc, char* argv[])
                                static_cast<float>(viewport_size.y),
                     0.1f, 1000.0f);
             } else if (event.type == sf::Event::MouseWheelMoved) {
-                delta += event.mouseWheel.delta*5;
-                view = glm::lookAt(glm::vec3(0.0f, 0.0f, delta),
-                                        glm::vec3(0.0f, 0.0f, 0.0f),
-                                        glm::vec3(0.0f, 1.0f, 0.0f));
+                view_pos += view_pos * event.mouseWheel.delta * 0.05f;
+                view = glm::lookAt(view_pos, glm::vec3(0.0f, 0.0f, 0.0f),
+                                   glm::vec3(0.0f, -1.0f, 0.0f));
 
                 normal = glm::transpose(glm::inverse(glm::mat3(view * model)));
             } else if (event.type == sf::Event::MouseButtonPressed) {
@@ -361,7 +471,7 @@ int main(int argc, char* argv[])
 
         if (mouse_pressed) {
             if( cur_pos != start_pos) {
-                update(model, normal, start_pos, cur_pos, viewport_size.x,
+                update(view, model, normal, start_pos, cur_pos, viewport_size.x,
                        viewport_size.y);
                 normal = glm::transpose(glm::inverse(glm::mat3(view * model)));
                 shadow_matrix = biasMatrix * depth_projection * depth_view * model;
@@ -391,37 +501,56 @@ int main(int argc, char* argv[])
         normal = glm::transpose(glm::inverse(glm::mat3(view * model)));
         shadow_matrix = biasMatrix * depth_projection * depth_view * model;
 
+
+        // Configure framebuffer for depth map
         glBindFramebuffer(GL_FRAMEBUFFER, fbo[0]);
         glViewport(0,0,depthmap_size.x,depthmap_size.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glPolygonOffset(5.5f,100.0f);
         glEnable(GL_POLYGON_OFFSET_FILL);
         
+        // Render jaw to depth map from light source
         glBindVertexArray(vao[0]);
         program_depth.bind();
         program_depth.set_uniform("projectionMatrix", depth_projection);
         program_depth.set_uniform("modelviewMatrix", depth_view * model);
         glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3,
                         GL_UNSIGNED_INT, nullptr);
+
+        // Render ground plane from light source
+        glBindVertexArray(vao[4]);
+        program_depth.set_uniform("projectionMatrix", depth_projection);
+        program_depth.set_uniform("modelviewMatrix", depth_view);
+        glDrawElements(GL_TRIANGLES, ground_mesh.triangles.size() * 3,
+                       GL_UNSIGNED_INT, nullptr);
         program_depth.unbind();
         glDisable(GL_POLYGON_OFFSET_FILL);
         
+        // Configure framebuffer for helper window
         glBindFramebuffer(GL_FRAMEBUFFER, fbo[1]);
         glViewport(0,0,depthmap_size.x,depthmap_size.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Draw jaw from light source
         glBindVertexArray(vao[0]);
         program_depth.bind();
         program_depth.set_uniform("projectionMatrix", depth_projection);
-        program_depth.set_uniform("modelviewMatrix", depth_view*model);
+        program_depth.set_uniform("modelviewMatrix", depth_view * model);
         glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3,
                         GL_UNSIGNED_INT, nullptr);
+
+        // Draw ground plane from light source
+        glBindVertexArray(vao[4]);
+        program_depth.set_uniform("projectionMatrix", depth_projection);
+        program_depth.set_uniform("modelviewMatrix", depth_view );
+        glDrawElements(GL_TRIANGLES, ground_mesh.triangles.size() * 3,
+                       GL_UNSIGNED_INT, nullptr);
         program_depth.unbind();
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
         glViewport(0, 0, viewport_size.x, viewport_size.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        //Render depth map to screen
+        // Render  jaw with shadows
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, depth_tex[0]);
         glBindVertexArray(vao[0]);
@@ -432,24 +561,50 @@ int main(int argc, char* argv[])
         program_shadow.set_uniform("lightpos",light_pos);
         program_shadow.set_uniform("shadowMatrix",shadow_matrix);
         program_shadow.set_uniform("ShadowMap", 0);
-        //.std::cout << "lighpos: " << glm::to_string(light_pos) << std::endl;
-
         glDrawElements(GL_TRIANGLES, mesh.triangles.size() * 3, GL_UNSIGNED_INT,
                         nullptr);
+
+        // Render ground plane with shadows
+        glBindVertexArray(vao[4]);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, depth_tex[0]);
+        program_ground.bind();
+        program_ground.set_uniform("projectionMatrix", projection);
+        program_ground.set_uniform("modelviewMatrix", view );
+        program_ground.set_uniform(
+            "normalMatrix", glm::transpose(glm::inverse(glm::mat3(view))));
+        
+        program_ground.set_uniform("lightpos",light_pos);
+        program_ground.set_uniform("shadowMatrix",
+                                   biasMatrix * depth_projection * depth_view);
+        program_ground.set_uniform("ShadowMap", 0);
+        glDrawElements(GL_TRIANGLES, ground_mesh.triangles.size() * 3,
+                       GL_UNSIGNED_INT, nullptr);
         program_shadow.unbind();
+
+        // Render point for light source
         glBindVertexArray(vao[1]);
         program_point.bind();
         program_point.set_uniform("projectionMatrix", projection);
-        program_point.set_uniform("modelviewMatrix",  view );
+        program_point.set_uniform("modelviewMatrix",  view  );
         glDrawArrays(GL_POINTS,0,1);
         program_point.unbind();
 
+        // Render lines for sensor field
+        glBindVertexArray(vao[3]);
+        program_lines.bind();
+        program_lines.set_uniform("projectionMatrix", projection);
+        program_lines.set_uniform("modelviewMatrix", view );
+        glDrawArrays(GL_LINES,0, sensor.size());
+        program_lines.unbind();
+
+        // Render depth map to bottom left of screen
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, depth_tex[1]);
         glBindVertexArray(vao[2]);
         program_quad.bind();
         program_quad.set_uniform("tex", 1);
-        glDrawArrays(GL_TRIANGLES, 0, quad.size() * 3);
+        glDrawArrays(GL_TRIANGLES, 0, quad.size());
         program_quad.unbind();
         window.display();
     }
